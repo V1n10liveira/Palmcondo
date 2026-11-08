@@ -1,0 +1,382 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model aberturas_portao {
+  id             BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  portao_id      BigInt                     @db.UnsignedBigInt
+  usuario_id     BigInt?                    @db.UnsignedBigInt
+  autorizacao_id BigInt?                    @db.UnsignedBigInt
+  data_hora      DateTime                   @default(now()) @db.DateTime(0)
+  origem         aberturas_portao_origem
+  resultado      aberturas_portao_resultado
+  observacao     String?                    @db.Text
+  autorizacoes   autorizacoes?              @relation(fields: [autorizacao_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_aberturas_autorizacao")
+  portoes        portoes                    @relation(fields: [portao_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_aberturas_portao")
+  usuarios       usuarios?                  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_aberturas_usuario")
+
+  @@index([autorizacao_id], map: "fk_aberturas_autorizacao")
+  @@index([data_hora], map: "idx_aberturas_data")
+  @@index([portao_id], map: "idx_aberturas_portao")
+  @@index([usuario_id], map: "idx_aberturas_usuario")
+}
+
+model acessos {
+  id                    BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id         BigInt               @db.UnsignedBigInt
+  autorizacao_id        BigInt?              @db.UnsignedBigInt
+  solicitacao_acesso_id BigInt?              @db.UnsignedBigInt
+  morador_id            BigInt?              @db.UnsignedBigInt
+  colaborador_id        BigInt?              @db.UnsignedBigInt
+  pessoa_id             BigInt?              @db.UnsignedBigInt
+  portao_id             BigInt               @db.UnsignedBigInt
+  data_hora_entrada     DateTime             @db.DateTime(0)
+  data_hora_saida       DateTime?            @db.DateTime(0)
+  status                acessos_status       @default(ABERTO)
+  observacao            String?              @db.Text
+  created_at            DateTime             @default(now()) @db.Timestamp(0)
+  autorizacoes          autorizacoes?        @relation(fields: [autorizacao_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_autorizacao")
+  condominios           condominios          @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_condominio")
+  portoes               portoes              @relation(fields: [portao_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_portao")
+  solicitacoes_acesso   solicitacoes_acesso? @relation(fields: [solicitacao_acesso_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_solicitacao")
+  moradores             moradores?           @relation(fields: [morador_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_morador")
+  colaboradores         colaboradores?       @relation(fields: [colaborador_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_colaborador")
+  pessoas               pessoas?             @relation(fields: [pessoa_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_acessos_pessoa")
+
+  @@index([condominio_id], map: "fk_acessos_condominio")
+  @@index([portao_id], map: "fk_acessos_portao")
+  @@index([solicitacao_acesso_id], map: "fk_acessos_solicitacao")
+  @@index([autorizacao_id], map: "idx_acessos_autorizacao")
+  @@index([morador_id], map: "idx_acessos_morador")
+  @@index([colaborador_id], map: "idx_acessos_colaborador")
+  @@index([pessoa_id], map: "idx_acessos_pessoa")
+  @@index([data_hora_entrada], map: "idx_acessos_entrada")
+  @@index([data_hora_saida], map: "idx_acessos_saida")
+}
+
+model apartamentos {
+  id                  BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id       BigInt                @db.UnsignedBigInt
+  bloco               String?               @db.VarChar(50)
+  numero              String                @db.VarChar(20)
+  andar               String?               @db.VarChar(20)
+  descricao           String?               @db.VarChar(150)
+  ativo               Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamp(0)
+  updated_at          DateTime              @default(now()) @db.Timestamp(0)
+  condominios         condominios           @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_apartamentos_condominio")
+  moradores           moradores[]
+  solicitacoes_acesso solicitacoes_acesso[]
+
+  @@unique([condominio_id, bloco, numero], map: "uk_apartamento")
+  @@index([condominio_id], map: "idx_apartamentos_condominio")
+}
+
+/// This table contains check constraints and requires additional setup for migrations.
+model autorizacoes {
+  id               BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id    BigInt              @db.UnsignedBigInt
+  morador_id       BigInt?             @db.UnsignedBigInt
+  pessoa_id        BigInt              @db.UnsignedBigInt
+  data_inicio      DateTime            @db.DateTime(0)
+  data_fim         DateTime            @db.DateTime(0)
+  hora_inicio      String              @db.VarChar(5)
+  hora_fim         String              @db.VarChar(5)
+  motivo           String?             @db.VarChar(255)
+  status           autorizacoes_status @default(ATIVA)
+  observacao       String?             @db.Text
+  criado_por       BigInt              @db.UnsignedBigInt
+  created_at       DateTime            @default(now()) @db.Timestamp(0)
+  updated_at       DateTime            @default(now()) @db.Timestamp(0)
+  aberturas_portao aberturas_portao[]
+  acessos          acessos[]
+  condominios      condominios         @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_autorizacoes_condominio")
+  usuarios         usuarios            @relation(fields: [criado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_autorizacoes_criado_por")
+  moradores        moradores?          @relation(fields: [morador_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_autorizacoes_morador")
+  pessoas          pessoas             @relation(fields: [pessoa_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_autorizacoes_pessoa")
+
+  @@index([condominio_id], map: "fk_autorizacoes_condominio")
+  @@index([criado_por], map: "fk_autorizacoes_criado_por")
+  @@index([morador_id], map: "idx_autorizacoes_morador")
+  @@index([pessoa_id], map: "idx_autorizacoes_pessoa")
+  @@index([data_inicio, data_fim], map: "idx_autorizacoes_periodo")
+  @@index([status], map: "idx_autorizacoes_status")
+}
+
+model colaboradores {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  usuario_id        BigInt    @unique(map: "uk_colaboradores_usuario") @db.UnsignedBigInt
+  cargo             String    @db.VarChar(100)
+  data_admissao     DateTime? @db.Date
+  data_desligamento DateTime? @db.Date
+  ativo             Boolean   @default(true)
+  created_at        DateTime  @default(now()) @db.Timestamp(0)
+  updated_at        DateTime  @default(now()) @db.Timestamp(0)
+  usuarios          usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_colaboradores_usuario")
+  acessos           acessos[]
+
+  @@index([cargo], map: "idx_colaboradores_cargo")
+}
+
+model condominios {
+  id                  BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  nome                String                @db.VarChar(150)
+  cnpj                String?               @unique(map: "uk_condominios_cnpj") @db.VarChar(18)
+  endereco            String                @db.VarChar(200)
+  numero              String?               @db.VarChar(20)
+  complemento          String?               @db.VarChar(100)
+  bairro              String?               @db.VarChar(100)
+  cidade              String                @db.VarChar(100)
+  estado              String                @db.Char(2)
+  cep                 String?               @db.VarChar(9)
+  telefone            String?               @db.VarChar(20)
+  email               String?               @db.VarChar(150)
+  ativo               Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamp(0)
+  updated_at          DateTime              @default(now()) @db.Timestamp(0)
+  acessos             acessos[]
+  apartamentos       apartamentos[]
+  autorizacoes       autorizacoes[]
+  pessoas             pessoas[]
+  portoes             portoes[]
+  solicitacoes_acesso solicitacoes_acesso[]
+  usuarios            usuarios[]
+}
+
+model logs_sistema {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  usuario_id     BigInt?   @db.UnsignedBigInt
+  acao           String    @db.VarChar(100)
+  tabela_afetada String?   @db.VarChar(100)
+  registro_id    BigInt?   @db.UnsignedBigInt
+  descricao      String?   @db.Text
+  ip             String?   @db.VarChar(45)
+  created_at     DateTime  @default(now()) @db.Timestamp(0)
+  usuarios       usuarios? @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_logs_usuario")
+
+  @@index([acao], map: "idx_logs_acao")
+  @@index([created_at], map: "idx_logs_data")
+  @@index([usuario_id], map: "idx_logs_usuario")
+}
+
+model moradores {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  usuario_id     BigInt         @unique(map: "uk_moradores_usuario") @db.UnsignedBigInt
+  apartamento_id BigInt         @db.UnsignedBigInt
+  data_entrada   DateTime?      @db.Date
+  data_saida     DateTime?      @db.Date
+  ativo          Boolean        @default(true)
+  created_at     DateTime       @default(now()) @db.Timestamp(0)
+  updated_at     DateTime       @default(now()) @db.Timestamp(0)
+  autorizacoes   autorizacoes[]
+  apartamentos   apartamentos   @relation(fields: [apartamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_moradores_apartamento")
+  usuarios       usuarios       @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_moradores_usuario")
+  acessos        acessos[]
+
+  @@index([apartamento_id], map: "idx_moradores_apartamento")
+}
+
+model notificacoes {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  usuario_id BigInt   @db.UnsignedBigInt
+  titulo     String   @db.VarChar(150)
+  mensagem   String   @db.Text
+  tipo       String?  @db.VarChar(50)
+  lida       Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  usuarios   usuarios @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notificacoes_usuario")
+
+  @@index([lida], map: "idx_notificacoes_lida")
+  @@index([usuario_id], map: "idx_notificacoes_usuario")
+}
+
+model portoes {
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id    BigInt             @db.UnsignedBigInt
+  nome             String             @db.VarChar(100)
+  tipo             portoes_tipo       @default(OUTRO)
+  localizacao      String?            @db.VarChar(150)
+  ativo            Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamp(0)
+  updated_at       DateTime           @default(now()) @db.Timestamp(0)
+  aberturas_portao aberturas_portao[]
+  acessos          acessos[]
+  condominios      condominios        @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_portoes_condominio")
+
+  @@index([condominio_id], map: "idx_portoes_condominio")
+}
+
+model pessoas {
+  id             BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id  BigInt               @db.UnsignedBigInt
+  nome           String               @db.VarChar(150)
+  cpf            String               @db.VarChar(14)
+  telefone       String?              @db.VarChar(20)
+  tipo_pessoa    pessoas_tipo_pessoa
+  observacao     String?              @db.Text
+  ativo          Boolean              @default(true)
+  created_at     DateTime             @default(now()) @db.Timestamp(0)
+  updated_at     DateTime             @default(now()) @db.Timestamp(0)
+  condominios    condominios          @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pessoas_condominio")
+  prestadores    prestadores?
+  acessos        acessos[]
+  autorizacoes   autorizacoes[]
+
+  @@unique([condominio_id, cpf], map: "uk_pessoas_condominio_cpf")
+  @@index([nome], map: "idx_pessoas_nome")
+  @@index([tipo_pessoa], map: "idx_pessoas_tipo")
+}
+
+model prestadores {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  pessoa_id  BigInt?   @unique(map: "uk_prestadores_pessoa") @db.UnsignedBigInt
+  empresa    String?   @db.VarChar(150)
+  servico    String    @db.VarChar(150)
+  observacao String?   @db.Text
+  ativo      Boolean   @default(true)
+  created_at DateTime  @default(now()) @db.Timestamp(0)
+  updated_at DateTime  @default(now()) @db.Timestamp(0)
+  pessoas    pessoas?  @relation(fields: [pessoa_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prestadores_pessoa")
+}
+
+model recuperacao_senha {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  usuario_id BigInt   @db.UnsignedBigInt
+  token      String   @unique(map: "uk_recuperacao_token") @db.VarChar(255)
+  expira_em  DateTime @db.DateTime(0)
+  utilizado  Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  usuarios   usuarios @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_recuperacao_usuario")
+
+  @@index([expira_em], map: "idx_recuperacao_expiracao")
+  @@index([usuario_id], map: "idx_recuperacao_usuario")
+}
+
+model solicitacoes_acesso {
+  id                     BigInt                          @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id          BigInt                          @db.UnsignedBigInt
+  nome                   String                          @db.VarChar(150)
+  cpf                    String                          @db.VarChar(14)
+  tipo_pessoa            solicitacoes_acesso_tipo_pessoa
+  apartamento_destino_id BigInt?                         @db.UnsignedBigInt
+  data_hora_solicitacao  DateTime                        @default(now()) @db.DateTime(0)
+  status                 solicitacoes_acesso_status      @default(PENDENTE)
+  data_hora_resposta     DateTime?                       @db.DateTime(0)
+  respondido_por         BigInt?                         @db.UnsignedBigInt
+  observacao             String?                         @db.Text
+  created_at             DateTime                        @default(now()) @db.Timestamp(0)
+  acessos                acessos[]
+  apartamentos           apartamentos?                   @relation(fields: [apartamento_destino_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_apartamento")
+  condominios            condominios                     @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_condominio")
+  usuarios               usuarios?                       @relation(fields: [respondido_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_respondido_por")
+
+  @@index([apartamento_destino_id], map: "fk_solicitacoes_apartamento")
+  @@index([condominio_id], map: "fk_solicitacoes_condominio")
+  @@index([respondido_por], map: "fk_solicitacoes_respondido_por")
+  @@index([cpf], map: "idx_solicitacoes_cpf")
+  @@index([data_hora_solicitacao], map: "idx_solicitacoes_data")
+  @@index([status], map: "idx_solicitacoes_status")
+}
+
+model usuarios {
+  id                  BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id       BigInt                @db.UnsignedBigInt
+  nome                String                @db.VarChar(150)
+  email               String                @unique(map: "uk_usuarios_email") @db.VarChar(150)
+  senha_hash          String                @db.VarChar(255)
+  cpf                 String                @unique(map: "uk_usuarios_cpf") @db.VarChar(14)
+  telefone            String?               @db.VarChar(20)
+  tipo_usuario        usuarios_tipo_usuario
+  ativo               Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamp(0)
+  updated_at          DateTime              @default(now()) @db.Timestamp(0)
+  aberturas_portao    aberturas_portao[]
+  autorizacoes        autorizacoes[]
+  colaboradores       colaboradores?
+  logs_sistema        logs_sistema[]
+  moradores           moradores?
+  notificacoes        notificacoes[]
+  recuperacao_senha   recuperacao_senha[]
+  solicitacoes_acesso solicitacoes_acesso[]
+  condominios         condominios           @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuarios_condominio")
+
+  @@index([condominio_id], map: "idx_usuarios_condominio")
+  @@index([tipo_usuario], map: "idx_usuarios_tipo")
+}
+
+model visitantes {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  nome         String    @db.VarChar(150)
+  cpf          String    @db.VarChar(14)
+  telefone     String?   @db.VarChar(20)
+  observacao   String?   @db.Text
+  ativo        Boolean   @default(true)
+  created_at   DateTime  @default(now()) @db.Timestamp(0)
+  updated_at   DateTime  @default(now()) @db.Timestamp(0)
+
+  @@index([cpf], map: "idx_visitantes_cpf")
+  @@index([nome], map: "idx_visitantes_nome")
+}
+
+enum portoes_tipo {
+  SOCIAL
+  GARAGEM
+  OUTRO
+}
+
+enum solicitacoes_acesso_tipo_pessoa {
+  VISITANTE
+  PRESTADOR
+}
+
+enum aberturas_portao_origem {
+  APLICATIVO
+  AUTOMATICO
+  ADMINISTRATIVO
+}
+
+enum aberturas_portao_resultado {
+  SUCESSO
+  FALHA
+}
+
+enum solicitacoes_acesso_status {
+  PENDENTE
+  AUTORIZADA
+  NEGADA
+  EXPIRADA
+  CANCELADA
+}
+
+enum usuarios_tipo_usuario {
+  MASTER
+  SINDICO
+  MORADOR
+  COLABORADOR
+}
+
+enum autorizacoes_status {
+  PENDENTE
+  ATIVA
+  UTILIZADA
+  EXPIRADA
+  CANCELADA
+  BLOQUEADA
+}
+
+enum acessos_status {
+  ABERTO
+  FINALIZADO
+  BLOQUEADO
+}
+
+enum pessoas_tipo_pessoa {
+  VISITANTE
+  PRESTADOR
+}
