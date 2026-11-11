@@ -233,7 +233,11 @@ async function listarAutorizacoes(req, res) {
             const morador = await prisma.moradores.findFirst({
                 where: {
                     usuario_id: usuarioId,
-                    ativo: true
+                    ativo: true,
+                    apartamentos: {
+                        condominio_id: condominioId,
+                        ativo: true
+                    }
                 }
             });
 
@@ -304,7 +308,11 @@ async function buscarAutorizacao(req, res) {
             const morador = await prisma.moradores.findFirst({
                 where: {
                     usuario_id: usuarioId,
-                    ativo: true
+                    ativo: true,
+                    apartamentos: {
+                        condominio_id: condominioId,
+                        ativo: true
+                    }
                 }
             });
 
@@ -348,9 +356,9 @@ async function criarAutorizacao(req, res) {
         const usuarioId = converterId(req.user.id);
         const perfil = req.user.tipo_usuario;
 
-        if (!PERFIS_AUTORIZACAO.includes(perfil)) {
+        if (perfil !== 'MORADOR') {
             return res.status(403).json({
-                erro: 'Você não tem permissão para criar autorizações.'
+                erro: 'Apenas moradores podem criar autorizações particulares.'
             });
         }
 
@@ -567,9 +575,9 @@ async function atualizarAutorizacao(req, res) {
         const usuarioId = converterId(req.user.id);
         const perfil = req.user.tipo_usuario;
 
-        if (!PERFIS_AUTORIZACAO.includes(perfil)) {
+        if (perfil !== 'MORADOR') {
             return res.status(403).json({
-                erro: 'Você não tem permissão para atualizar autorizações.'
+                erro: 'Apenas moradores podem atualizar suas próprias autorizações.'
             });
         }
 
@@ -596,7 +604,11 @@ async function atualizarAutorizacao(req, res) {
             const morador = await prisma.moradores.findFirst({
                 where: {
                     usuario_id: usuarioId,
-                    ativo: true
+                    ativo: true,
+                    apartamentos: {
+                        condominio_id: condominioId,
+                        ativo: true
+                    }
                 }
             });
 
@@ -751,9 +763,9 @@ async function excluirAutorizacao(req, res) {
         const usuarioId = converterId(req.user.id);
         const perfil = req.user.tipo_usuario;
 
-        if (!PERFIS_AUTORIZACAO.includes(perfil)) {
+        if (perfil !== 'MORADOR') {
             return res.status(403).json({
-                erro: 'Você não tem permissão para cancelar autorizações.'
+                erro: 'Apenas moradores podem cancelar suas próprias autorizações.'
             });
         }
 
@@ -780,7 +792,11 @@ async function excluirAutorizacao(req, res) {
             const morador = await prisma.moradores.findFirst({
                 where: {
                     usuario_id: usuarioId,
-                    ativo: true
+                    ativo: true,
+                    apartamentos: {
+                        condominio_id: condominioId,
+                        ativo: true
+                    }
                 }
             });
 
