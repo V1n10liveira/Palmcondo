@@ -9,6 +9,7 @@ const condominioRoutes = require('./routes/condominio.routes');
 const apartamentosRoutes = require('./routes/apartamentos.routes');
 const moradoresRoutes = require('./routes/moradores.routes');
 const autorizacoesRoutes = require('./routes/autorizacoes.routes');
+const prestadoresRoutes = require('./routes/prestadores.routes');
 
 const app = express();
 
@@ -29,5 +30,6 @@ app.use('/condominios', condominioRoutes);
 app.use('/apartamentos', apartamentosRoutes);
 app.use('/moradores', moradoresRoutes);
 app.use('/autorizacoes', autorizacoesRoutes);
+app.use('/prestadores', prestadoresRoutes);
 
 module.exports = app;
