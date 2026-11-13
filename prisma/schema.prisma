@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -125,6 +126,7 @@ model colaboradores {
 
 model condominios {
   id                  BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo_publico      String?               @unique(map: "uk_condominios_codigo_publico") @db.VarChar(64)
   nome                String                @db.VarChar(150)
   cnpj                String?               @unique(map: "uk_condominios_cnpj") @db.VarChar(18)
   endereco            String                @db.VarChar(200)
@@ -165,19 +167,20 @@ model logs_sistema {
 }
 
 model moradores {
-  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
-  usuario_id     BigInt         @unique(map: "uk_moradores_usuario") @db.UnsignedBigInt
-  apartamento_id BigInt         @db.UnsignedBigInt
-  data_entrada   DateTime?      @db.Date
-  data_saida     DateTime?      @db.Date
-  ativo          Boolean        @default(true)
-  created_at     DateTime       @default(now()) @db.Timestamp(0)
-  updated_at     DateTime       @default(now()) @db.Timestamp(0)
-  autorizacoes   autorizacoes[]
-  apartamentos   apartamentos   @relation(fields: [apartamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_moradores_apartamento")
-  usuarios       usuarios       @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_moradores_usuario")
-  acessos        acessos[]
-  prestadores    prestadores[]
+  id                   BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  usuario_id           BigInt                @unique(map: "uk_moradores_usuario") @db.UnsignedBigInt
+  apartamento_id       BigInt                @db.UnsignedBigInt
+  data_entrada         DateTime?             @db.Date
+  data_saida           DateTime?             @db.Date
+  ativo                Boolean               @default(true)
+  created_at           DateTime              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime              @default(now()) @db.Timestamp(0)
+  autorizacoes         autorizacoes[]
+  apartamentos         apartamentos          @relation(fields: [apartamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_moradores_apartamento")
+  usuarios             usuarios              @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_moradores_usuario")
+  acessos              acessos[]
+  prestadores          prestadores[]
+  moradores_visitantes moradores_visitantes[]
 
   @@index([apartamento_id], map: "idx_moradores_apartamento")
 }
@@ -213,24 +216,40 @@ model portoes {
 }
 
 model pessoas {
-  id            BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
-  condominio_id BigInt              @db.UnsignedBigInt
-  nome          String              @db.VarChar(150)
-  cpf           String              @db.VarChar(14)
-  telefone      String?             @db.VarChar(20)
-  tipo_pessoa   pessoas_tipo_pessoa
-  observacao    String?             @db.Text
-  ativo         Boolean             @default(true)
-  created_at    DateTime            @default(now()) @db.Timestamp(0)
-  updated_at    DateTime            @default(now()) @db.Timestamp(0)
-  condominios   condominios         @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pessoas_condominio")
-  prestadores   prestadores?
-  acessos       acessos[]
-  autorizacoes  autorizacoes[]
+  id                   BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id        BigInt                @db.UnsignedBigInt
+  nome                 String                @db.VarChar(150)
+  cpf                  String                @db.VarChar(14)
+  telefone             String?               @db.VarChar(20)
+  tipo_pessoa          pessoas_tipo_pessoa
+  observacao           String?               @db.Text
+  ativo                Boolean               @default(true)
+  created_at           DateTime              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime              @default(now()) @db.Timestamp(0)
+  condominios          condominios           @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pessoas_condominio")
+  prestadores          prestadores?
+  acessos              acessos[]
+  autorizacoes         autorizacoes[]
+  moradores_visitantes moradores_visitantes[]
 
   @@unique([condominio_id, cpf], map: "uk_pessoas_condominio_cpf")
   @@index([nome], map: "idx_pessoas_nome")
   @@index([tipo_pessoa], map: "idx_pessoas_tipo")
+}
+
+model moradores_visitantes {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  morador_id BigInt   @db.UnsignedBigInt
+  pessoa_id  BigInt   @db.UnsignedBigInt
+  ativo      Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+
+  moradores moradores @relation(fields: [morador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pessoas   pessoas   @relation(fields: [pessoa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([morador_id, pessoa_id], map: "uk_moradores_visitantes")
+  @@index([pessoa_id], map: "idx_moradores_visitantes_pessoa")
 }
 
 model prestadores {
@@ -240,10 +259,10 @@ model prestadores {
   empresa    String?    @db.VarChar(150)
   servico    String     @db.VarChar(150)
   observacao String?    @db.Text
-  ativo      Boolean    @default(true)
-  created_at DateTime   @default(now()) @db.Timestamp(0)
-  updated_at DateTime   @default(now()) @db.Timestamp(0)
-  pessoas    pessoas?   @relation(fields: [pessoa_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prestadores_pessoa")
+  ativo      Boolean   @default(true)
+  created_at DateTime  @default(now()) @db.Timestamp(0)
+  updated_at DateTime  @default(now()) @db.Timestamp(0)
+  pessoas    pessoas?  @relation(fields: [pessoa_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prestadores_pessoa")
   moradores  moradores? @relation(fields: [morador_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prestadores_morador")
 
   @@index([morador_id], map: "idx_prestadores_morador")
@@ -266,6 +285,7 @@ model solicitacoes_acesso {
   id                     BigInt                          @id @default(autoincrement()) @db.UnsignedBigInt
   condominio_id          BigInt                          @db.UnsignedBigInt
   nome                   String                          @db.VarChar(150)
+  mensagem               String?                         @db.VarChar(50)
   cpf                    String                          @db.VarChar(14)
   tipo_pessoa            solicitacoes_acesso_tipo_pessoa
   apartamento_destino_id BigInt?                         @db.UnsignedBigInt
