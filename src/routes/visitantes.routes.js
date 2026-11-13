@@ -7,9 +7,16 @@ const {
     criarVisitante
 } = require('../controllers/visitantes.controller');
 
+const {
+    criarSolicitacaoPublica
+} = require('../controllers/solicitacoes.controller');
+
 const authMiddleware = require('../middlewares/auth.middleware');
 
 const router = express.Router();
+
+// Solicitação pública de acesso por visitante.
+router.post('/solicitacoes', criarSolicitacaoPublica);
 
 // Lista os visitantes vinculados ao morador autenticado.
 router.get('/', authMiddleware, listarVisitantes);
