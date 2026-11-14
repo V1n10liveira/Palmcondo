@@ -285,7 +285,7 @@ model solicitacoes_acesso {
   id                     BigInt                          @id @default(autoincrement()) @db.UnsignedBigInt
   condominio_id          BigInt                          @db.UnsignedBigInt
   nome                   String                          @db.VarChar(150)
-  mensagem               String?                         @db.VarChar(50)
+  mensagem               String?                         @db.VarChar(100)
   cpf                    String                          @db.VarChar(14)
   tipo_pessoa            solicitacoes_acesso_tipo_pessoa
   apartamento_destino_id BigInt?                         @db.UnsignedBigInt

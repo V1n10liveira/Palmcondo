@@ -124,9 +124,9 @@ async function criarSolicitacaoPublica(req, res) {
             });
         }
 
-        if (mensagemLimpa && mensagemLimpa.length > 50) {
+        if (mensagemLimpa && mensagemLimpa.length > 100) {
             return res.status(400).json({
-                erro: 'A mensagem deve possuir no máximo 50 caracteres.'
+                erro: 'A mensagem deve possuir no máximo 100 caracteres.'
             });
         }
 

@@ -1,4 +1,8 @@
 
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+
+import { api } from '../services/api'
 import '../App.css'
 import './Visitante.css'
 
@@ -24,22 +28,212 @@ function LockIcon() {
   )
 }
 
-const apartamentos = [
-  { id: 1, bloco: 'A', numero: '101' },
-  { id: 2, bloco: 'A', numero: '102' },
-  { id: 3, bloco: 'A', numero: '103' },
-  { id: 4, bloco: 'A', numero: '104' },
-  { id: 5, bloco: 'A', numero: '105' },
-  { id: 6, bloco: 'A', numero: '106' },
-  { id: 7, bloco: 'A', numero: '107' },
-  { id: 8, bloco: 'A', numero: '108' },
-  { id: 9, bloco: 'A', numero: '109' },
-  { id: 10, bloco: 'A', numero: '110' },
-]
+function formatarCPF(valor) {
+  const numeros = valor.replace(/\D/g, '').slice(0, 11)
+
+  return numeros
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
+function validarCPF(valor) {
+  const cpf = valor.replace(/\D/g, '')
+
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+    return false
+  }
+
+  let soma = 0
+
+  for (let i = 0; i < 9; i++) {
+    soma += Number(cpf[i]) * (10 - i)
+  }
+
+  let primeiroDigito = (soma * 10) % 11
+
+  if (primeiroDigito === 10) {
+    primeiroDigito = 0
+  }
+
+  if (primeiroDigito !== Number(cpf[9])) {
+    return false
+  }
+
+  soma = 0
+
+  for (let i = 0; i < 10; i++) {
+    soma += Number(cpf[i]) * (11 - i)
+  }
+
+  let segundoDigito = (soma * 10) % 11
+
+  if (segundoDigito === 10) {
+    segundoDigito = 0
+  }
+
+  return segundoDigito === Number(cpf[10])
+}
 
 function Visitante() {
-  function handleSubmit(event) {
+  const { codigo } = useParams()
+
+  const [condominio, setCondominio] = useState(null)
+  const [apartamentos, setApartamentos] = useState([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState('')
+  const [cpf, setCpf] = useState('')
+  const [erroCpf, setErroCpf] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [erroSolicitacao, setErroSolicitacao] = useState('')
+  const [sucesso, setSucesso] = useState('')
+
+  useEffect(() => {
+    let cancelado = false
+
+    async function carregarDados() {
+      setCarregando(true)
+      setErro('')
+      setCondominio(null)
+      setApartamentos([])
+
+      try {
+        if (!codigo) {
+          throw new Error('Código do condomínio não informado.')
+        }
+
+        const [dadosCondominio, dadosApartamentos] = await Promise.all([
+          api.get(`/condominios/publico/${encodeURIComponent(codigo)}`),
+          api.get(
+            `/condominios/publico/${encodeURIComponent(codigo)}/apartamentos`
+          ),
+        ])
+
+        if (!dadosCondominio?.condominio) {
+          throw new Error('Não foi possível identificar o condomínio.')
+        }
+
+        if (!Array.isArray(dadosApartamentos?.apartamentos)) {
+          throw new Error('Não foi possível carregar os apartamentos.')
+        }
+
+        if (!cancelado) {
+          setCondominio(dadosCondominio.condominio)
+          setApartamentos(dadosApartamentos.apartamentos)
+        }
+      } catch (error) {
+        if (!cancelado) {
+          setErro(error.message || 'Erro ao carregar os dados do condomínio.')
+        }
+      } finally {
+        if (!cancelado) {
+          setCarregando(false)
+        }
+      }
+    }
+
+    carregarDados()
+
+    return () => {
+      cancelado = true
+    }
+  }, [codigo])
+
+  useEffect(() => {
+    if (!sucesso) {
+      return
+    }
+
+    const temporizador = setTimeout(() => {
+      setSucesso('')
+    }, 10000)
+
+    return () => {
+      clearTimeout(temporizador)
+    }
+  }, [sucesso])
+
+  function limparMensagemSucesso() {
+    setSucesso('')
+    setErroSolicitacao('')
+  }
+
+  function handleCPFChange(event) {
+    const numeros = event.target.value.replace(/\D/g, '').slice(0, 11)
+
+    setCpf(numeros)
+    limparMensagemSucesso()
+
+    if (numeros.length === 11 && !validarCPF(numeros)) {
+      setErroCpf('CPF inválido. Confira os números informados.')
+    } else {
+      setErroCpf('')
+    }
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault()
+
+    if (enviando) {
+      return
+    }
+
+    setErroSolicitacao('')
+    setSucesso('')
+
+    if (!validarCPF(cpf)) {
+      setErroCpf('Informe um CPF válido para continuar.')
+      return
+    }
+
+    setErroCpf('')
+
+    const formularioElemento = event.currentTarget
+    const formulario = new FormData(formularioElemento)
+
+    const nome = formulario.get('nome')?.toString().trim()
+    const apartamentoId = formulario.get('apartamento')?.toString()
+    const mensagem = formulario.get('mensagem')?.toString().trim()
+
+    if (!nome || !apartamentoId || !codigo) {
+      setErroSolicitacao(
+        'Preencha todos os campos obrigatórios antes de continuar.'
+      )
+      return
+    }
+
+    const dadosSolicitacao = {
+      codigo_publico: codigo,
+      nome,
+      cpf: cpf.replace(/\D/g, ''),
+      apartamento_destino_id: apartamentoId,
+      mensagem: mensagem || null,
+    }
+
+    try {
+      setEnviando(true)
+
+      const resposta = await api.post(
+        '/visitantes/solicitacoes',
+        dadosSolicitacao
+      )
+
+      formularioElemento.reset()
+      setCpf('')
+      setErroCpf('')
+
+      setSucesso(
+        resposta?.mensagem ||
+          'Solicitação enviada com sucesso! Aguarde a aprovação do condomínio.'
+      )
+    } catch (error) {
+      setErroSolicitacao(
+        error.message ||
+          'Não foi possível enviar sua solicitação. Tente novamente.'
+      )
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -78,8 +272,40 @@ function Visitante() {
           <div className="condominio-identificacao">
             <span>CONDOMÍNIO</span>
 
-            <strong>Ideal Erechim</strong>
+            <strong>
+              {carregando
+                ? 'Carregando condomínio...'
+                : condominio?.nome || 'Condomínio não identificado'}
+            </strong>
           </div>
+
+          {erro && (
+            <div className="alert alert-danger" role="alert">
+              {erro}
+            </div>
+          )}
+
+          {!erro && !carregando && apartamentos.length === 0 && (
+            <div className="alert alert-warning" role="alert">
+              Não existem apartamentos disponíveis para solicitação de acesso.
+            </div>
+          )}
+
+          {sucesso && (
+            <div className="alert alert-success" role="status">
+              <strong>Solicitação registrada!</strong>
+              <p className="mb-0 mt-1">{sucesso}</p>
+              <p className="mb-0 mt-2">
+                Sua solicitação está pendente de aprovação pelo condomínio.
+              </p>
+            </div>
+          )}
+
+          {erroSolicitacao && (
+            <div className="alert alert-danger" role="alert">
+              {erroSolicitacao}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
@@ -93,14 +319,26 @@ function Visitante() {
                 className="form-select"
                 defaultValue=""
                 required
+                onChange={limparMensagemSucesso}
+                disabled={
+                  carregando ||
+                  Boolean(erro) ||
+                  apartamentos.length === 0 ||
+                  enviando
+                }
               >
                 <option value="" disabled>
-                  Selecione o apartamento
+                  {carregando
+                    ? 'Carregando apartamentos...'
+                    : 'Selecione o apartamento'}
                 </option>
 
                 {apartamentos.map((apartamento) => (
                   <option key={apartamento.id} value={apartamento.id}>
-                    Bloco {apartamento.bloco} - Apto {apartamento.numero}
+                    {apartamento.bloco
+                      ? `Bloco ${apartamento.bloco} - `
+                      : ''}
+                    Apto {apartamento.numero}
                   </option>
                 ))}
               </select>
@@ -118,7 +356,10 @@ function Visitante() {
                 className="form-control"
                 placeholder="Digite seu nome completo"
                 autoComplete="name"
+                maxLength={150}
                 required
+                onChange={limparMensagemSucesso}
+                disabled={enviando}
               />
             </div>
 
@@ -131,13 +372,24 @@ function Visitante() {
                 type="text"
                 id="cpf"
                 name="cpf"
-                className="form-control"
+                className={`form-control ${erroCpf ? 'is-invalid' : ''}`}
                 placeholder="000.000.000-00"
                 inputMode="numeric"
                 autoComplete="off"
                 maxLength={14}
+                value={formatarCPF(cpf)}
+                onChange={handleCPFChange}
+                aria-invalid={Boolean(erroCpf)}
+                aria-describedby="cpf-feedback"
                 required
+                disabled={enviando}
               />
+
+              {erroCpf && (
+                <div id="cpf-feedback" className="invalid-feedback">
+                  {erroCpf}
+                </div>
+              )}
             </div>
 
             <div className="mb-4">
@@ -152,6 +404,8 @@ function Visitante() {
                 rows="3"
                 maxLength={100}
                 placeholder="Digite uma mensagem (até 100 caracteres)"
+                onChange={limparMensagemSucesso}
+                disabled={enviando}
               />
 
               <div className="form-text">
@@ -162,8 +416,14 @@ function Visitante() {
             <button
               type="submit"
               className="visitante-button"
+              disabled={
+                carregando ||
+                Boolean(erro) ||
+                apartamentos.length === 0 ||
+                enviando
+              }
             >
-              Enviar solicitação
+              {enviando ? 'Enviando solicitação...' : 'Enviar solicitação'}
             </button>
           </form>
         </div>
