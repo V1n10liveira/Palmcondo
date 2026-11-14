@@ -1,16 +1,33 @@
 
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, '')
 
+const TOKEN_KEY = 'palmcondo_token'
+
+function obterToken() {
+  return sessionStorage.getItem(TOKEN_KEY)
+}
+
+function salvarToken(token) {
+  sessionStorage.setItem(TOKEN_KEY, token)
+}
+
+function limparToken() {
+  sessionStorage.removeItem(TOKEN_KEY)
+}
+
 async function requisicao(endpoint, options = {}) {
   if (!API_URL) {
     throw new Error('A URL da API não está configurada.')
   }
 
   try {
+    const token = obterToken()
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers: {
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     })
@@ -59,4 +76,23 @@ export const api = {
       body: JSON.stringify(dados),
     })
   },
+
+  put(endpoint, dados) {
+    return requisicao(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    })
+  },
+
+  delete(endpoint) {
+    return requisicao(endpoint, {
+      method: 'DELETE',
+    })
+  },
+
+  salvarToken,
+
+  obterToken,
+
+  limparToken,
 }

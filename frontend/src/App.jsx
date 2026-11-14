@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import Home from './pages/Home'
 import Visitante from './pages/Visitante'
+import Login from './pages/Login'
 
 function App() {
   return (
@@ -13,6 +14,11 @@ function App() {
         <Route
           path="/visitante/:codigo"
           element={<Visitante />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
         />
       </Routes>
     </BrowserRouter>
