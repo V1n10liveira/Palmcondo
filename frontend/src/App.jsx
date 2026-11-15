@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Visitante from './pages/Visitante'
 import Login from './pages/Login'
+import Painel from './pages/Painel'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -25,7 +26,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route
             path="/painel"
-            element={<div>Painel em construção.</div>}
+            element={<Painel />}
           />
         </Route>
       </Routes>

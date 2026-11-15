@@ -1,8 +1,10 @@
 
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import './Login.css'
+
+const CHAVE_MENSAGEM_ACESSO = 'palmcondo_mensagem_acesso'
 
 function LockIcon() {
   return (
@@ -70,12 +72,34 @@ function EyeIcon({ aberto }) {
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
+
+  useEffect(() => {
+    const mensagem = sessionStorage.getItem(CHAVE_MENSAGEM_ACESSO)
+
+    if (mensagem) {
+      setErro(mensagem)
+      sessionStorage.removeItem(CHAVE_MENSAGEM_ACESSO)
+    } else if (location.state?.erroAcesso) {
+      setErro(location.state.erroAcesso)
+    }
+  }, [location.state])
+
+  useEffect(() => {
+    if (!erro) return
+
+    const temporizador = setTimeout(() => {
+      setErro('')
+    }, 10000)
+
+    return () => clearTimeout(temporizador)
+  }, [erro])
 
   useEffect(() => {
     const token = api.obterToken()
@@ -162,8 +186,42 @@ function Login() {
           </p>
 
           {erro && (
-            <div className="alert alert-danger" role="alert">
-              {erro}
+            <div
+              role="alert"
+              aria-live="assertive"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                padding: '14px',
+                marginBottom: '20px',
+                border: '1px solid #dc3545',
+                borderRadius: '8px',
+                backgroundColor: '#f8d7da',
+                color: '#842029',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                textAlign: 'left',
+              }}
+            >
+              <strong style={{ flexShrink: 0 }}>!</strong>
+              <span>{erro}</span>
+              <button
+                type="button"
+                onClick={() => setErro('')}
+                aria-label="Fechar mensagem"
+                style={{
+                  marginLeft: 'auto',
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#842029',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
             </div>
           )}
 
