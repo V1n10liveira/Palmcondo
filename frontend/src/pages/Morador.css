@@ -1,0 +1,715 @@
+
+.morador-layout {
+  --pc-yellow: #ffd000;
+  --pc-black: #171717;
+  --pc-background: #f7f7f4;
+  --pc-muted: #737373;
+
+  min-height: 100vh;
+  display: flex;
+  color: #242424;
+  background: var(--pc-background);
+}
+
+/* MENU LATERAL */
+
+.morador-sidebar {
+  width: 265px;
+  min-width: 265px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 20px 20px;
+  background: #fff;
+  border-right: 1px solid #e9e9e3;
+}
+
+.morador-brand {
+  display: inline-block;
+  margin: 0 0 48px 10px;
+  color: var(--pc-black);
+  font-size: 24px;
+  font-weight: 850;
+  letter-spacing: -1px;
+  text-decoration: none;
+}
+
+.morador-brand span {
+  font-weight: 500;
+}
+
+.morador-sidebar-label {
+  margin: 0 0 14px 10px;
+  color: #999;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.morador-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.morador-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 12px;
+  color: #666;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.morador-nav-item:hover {
+  color: var(--pc-black);
+  background: #f7f7f4;
+}
+
+.morador-nav-item.ativo {
+  color: var(--pc-black);
+  background: #fff5c7;
+  font-weight: 800;
+}
+
+.morador-nav-icon {
+  width: 20px;
+  font-size: 18px;
+  text-align: center;
+}
+
+/* USUÁRIO E SAÍDA */
+
+.morador-sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.morador-user-info {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 5px 3px 18px;
+}
+
+.morador-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pc-black);
+  background: var(--pc-yellow);
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.morador-user-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.morador-user-text strong {
+  overflow: hidden;
+  color: #222;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.morador-user-text span {
+  color: #888;
+  font-size: 10px;
+}
+
+.morador-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 10px;
+  color: #777;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.morador-logout:hover {
+  color: #b3261e;
+  background: #fff1ef;
+}
+
+/* CONTEÚDO PRINCIPAL */
+
+.morador-main {
+  min-width: 0;
+  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.morador-topbar {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 5%;
+  background: #fff;
+  border-bottom: 1px solid #e9e9e3;
+}
+
+.morador-breadcrumb {
+  color: #999;
+  font-size: 10px;
+}
+
+.morador-topbar h1 {
+  margin: 6px 0 0;
+  color: var(--pc-black);
+  font-size: 19px;
+  font-weight: 850;
+}
+
+.morador-topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #555;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.morador-content {
+  width: 100%;
+  max-width: 1250px;
+  flex: 1;
+  margin: 0 auto;
+  padding: 42px 5%;
+}
+
+/* BOAS-VINDAS */
+
+.morador-welcome {
+  padding: 30px;
+  background: #fff;
+  border: 1px solid #eaeae4;
+  border-radius: 13px;
+}
+
+.morador-welcome > span {
+  color: #967500;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 1.4px;
+}
+
+.morador-welcome h2 {
+  margin: 13px 0 9px;
+  color: var(--pc-black);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 850;
+  letter-spacing: -1px;
+}
+
+.morador-welcome p {
+  max-width: 600px;
+  margin: 0;
+  color: var(--pc-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+/* ACESSO RÁPIDO */
+
+.morador-section-heading {
+  margin: 34px 0 18px;
+}
+
+.morador-section-heading h3 {
+  margin: 0 0 6px;
+  color: #222;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.morador-section-heading p {
+  margin: 0;
+  color: #888;
+  font-size: 11px;
+}
+
+.morador-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.morador-card {
+  min-height: 175px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #eaeae4;
+  border-radius: 11px;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.morador-card:hover {
+  border-color: var(--pc-yellow);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.04);
+}
+
+.morador-card-icon {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 13px;
+  color: var(--pc-black);
+  background: #fff3bd;
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.morador-card strong {
+  color: #222;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.morador-card-description {
+  margin-top: 7px;
+  color: #888;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.morador-card-link {
+  margin-top: auto;
+  padding-top: 13px;
+  color: #8a6b00;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* TELAS DAS SEÇÕES */
+
+.morador-empty-state {
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  background: #fff;
+  border: 1px solid #eaeae4;
+  border-radius: 13px;
+  text-align: center;
+}
+
+.morador-empty-icon {
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  color: var(--pc-black);
+  background: #fff3bd;
+  border-radius: 14px;
+  font-size: 25px;
+}
+
+.morador-empty-state h2 {
+  margin: 0 0 9px;
+  color: #222;
+  font-size: 19px;
+  font-weight: 850;
+}
+
+.morador-empty-state p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.morador-empty-state > span {
+  margin-top: 12px;
+  color: #999;
+  font-size: 10px;
+}
+
+.morador-empty-state button {
+  margin-top: 23px;
+  padding: 11px 17px;
+  color: #171717;
+  background: var(--pc-yellow);
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* RODAPÉ */
+
+.morador-footer {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 5%;
+  border-top: 1px solid #e9e9e3;
+  color: #888;
+  font-size: 10px;
+}
+
+.morador-footer span {
+  color: #aaa;
+}
+
+/* AUTORIZAÇÕES DO MORADOR */
+
+.morador-autorizacoes {
+  width: 100%;
+}
+
+.morador-autorizacoes-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.morador-autorizacoes-toolbar p {
+  margin: 0;
+  color: #777;
+  font-size: 11px;
+}
+
+.morador-autorizacoes-toolbar button {
+  padding: 9px 14px;
+  color: #171717;
+  background: var(--pc-yellow);
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.morador-autorizacoes-toolbar button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.morador-autorizacoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.morador-autorizacao-card {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #eaeae4;
+  border-radius: 11px;
+}
+
+.morador-autorizacao-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #eee;
+}
+
+.morador-autorizacao-tipo {
+  color: #967500;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.morador-autorizacao-header h3 {
+  margin: 7px 0 0;
+  color: #222;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.morador-status {
+  padding: 7px 11px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.morador-status-ativa {
+  color: #176b37;
+  background: #e4f5e9;
+}
+
+.morador-status-pendente {
+  color: #886300;
+  background: #fff4ce;
+}
+
+.morador-status-utilizada {
+  color: #245b9b;
+  background: #e6f0ff;
+}
+
+.morador-status-expirada {
+  color: #666;
+  background: #ededed;
+}
+
+.morador-status-cancelada {
+  color: #a12d2d;
+  background: #ffe8e8;
+}
+
+.morador-status-bloqueada {
+  color: #fff;
+  background: #8d2525;
+}
+
+.morador-status-desconhecido {
+  color: #555;
+  background: #eee;
+}
+
+.morador-autorizacao-detalhes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding-top: 18px;
+}
+
+.morador-autorizacao-detalhes > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.morador-autorizacao-detalhes span {
+  color: #999;
+  font-size: 10px;
+}
+
+.morador-autorizacao-detalhes strong {
+  color: #333;
+  font-size: 11px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* CARREGAMENTO, ERROS E LISTA VAZIA */
+
+.morador-feedback {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  background: #fff;
+  border: 1px solid #eaeae4;
+  border-radius: 11px;
+  text-align: center;
+}
+
+.morador-feedback h3 {
+  margin: 14px 0 7px;
+  color: #222;
+  font-size: 15px;
+}
+
+.morador-feedback p {
+  max-width: 420px;
+  color: #888;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.morador-feedback button {
+  margin-top: 12px;
+  padding: 10px 16px;
+  color: #171717;
+  background: var(--pc-yellow);
+  border: 0;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.morador-feedback-erro {
+  border-color: #f0d0d0;
+}
+
+.morador-feedback-erro h3 {
+  color: #a12d2d;
+}
+
+.morador-loading {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #eee;
+  border-top-color: var(--pc-yellow);
+  border-radius: 50%;
+  animation: morador-girar 0.8s linear infinite;
+}
+
+@keyframes morador-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* RESPONSIVIDADE */
+
+@media (max-width: 800px) {
+  .morador-sidebar {
+    width: 220px;
+    min-width: 220px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .morador-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .morador-layout {
+    flex-direction: column;
+  }
+
+  .morador-sidebar {
+    width: 100%;
+    min-width: 0;
+    min-height: auto;
+    padding: 17px 15px 12px;
+    border-right: 0;
+    border-bottom: 1px solid #e9e9e3;
+  }
+
+  .morador-brand {
+    margin: 0 0 18px 5px;
+    font-size: 21px;
+  }
+
+  .morador-sidebar-label {
+    margin-left: 5px;
+  }
+
+  .morador-nav {
+    flex-direction: row;
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 7px;
+  }
+
+  .morador-nav-item {
+    width: auto;
+    min-width: max-content;
+    gap: 7px;
+    padding: 10px;
+    font-size: 10px;
+  }
+
+  .morador-nav-icon {
+    width: auto;
+  }
+
+  .morador-sidebar-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .morador-user-info {
+    padding: 0;
+  }
+
+  .morador-logout {
+    width: auto;
+  }
+
+  .morador-topbar {
+    min-height: 75px;
+    padding: 14px 20px;
+  }
+
+  .morador-topbar-user span {
+    display: none;
+  }
+
+  .morador-content {
+    padding: 25px 16px;
+  }
+
+  .morador-welcome {
+    padding: 22px;
+  }
+
+  .morador-footer {
+    padding: 15px 18px;
+  }
+
+  .morador-autorizacao-card {
+    padding: 17px;
+  }
+
+  .morador-autorizacao-header {
+    flex-direction: column;
+  }
+
+  .morador-autorizacao-detalhes {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .morador-autorizacoes-toolbar {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 380px) {
+  .morador-footer span {
+    display: none;
+  }
+}

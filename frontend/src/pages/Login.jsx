@@ -6,6 +6,16 @@ import './Login.css'
 
 const CHAVE_MENSAGEM_ACESSO = 'palmcondo_mensagem_acesso'
 
+function obterRotaPorPerfil(tipoUsuario) {
+  const rotas = {
+    MASTER: '/painel',
+    SINDICO: '/painel',
+    MORADOR: '/morador',
+  }
+
+  return rotas[tipoUsuario] || null
+}
+
 function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -106,7 +116,17 @@ function Login() {
     const usuario = api.obterUsuario()
 
     if (token && usuario) {
-      navigate('/painel', { replace: true })
+      const rota = obterRotaPorPerfil(usuario.tipo_usuario)
+
+      if (rota) {
+        navigate(rota, { replace: true })
+        return
+      }
+
+      api.limparSessao()
+      setErro(
+        'Seu perfil ainda não possui acesso aos painéis disponíveis.'
+      )
       return
     }
 
@@ -139,9 +159,19 @@ function Login() {
         throw new Error('Resposta de autenticação inválida.')
       }
 
+      const rota = obterRotaPorPerfil(
+        resposta.usuario.tipo_usuario
+      )
+
+      if (!rota) {
+        throw new Error(
+          'Seu perfil ainda não possui acesso aos painéis disponíveis.'
+        )
+      }
+
       api.salvarSessao(resposta.token, resposta.usuario)
 
-      navigate('/painel', { replace: true })
+      navigate(rota, { replace: true })
     } catch (error) {
       setErro(error.message || 'Não foi possível realizar o login.')
     } finally {
