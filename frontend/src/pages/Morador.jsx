@@ -84,6 +84,18 @@ function formatarData(data) {
   })
 }
 
+function formatarDataHora(data) {
+  if (!data) return 'Não informada'
+
+  const dataObj = new Date(data)
+
+  if (Number.isNaN(dataObj.getTime())) {
+    return 'Data inválida'
+  }
+
+  return dataObj.toLocaleString('pt-BR')
+}
+
 function formatarTipoPessoa(tipo) {
   const tipos = {
     VISITANTE: 'Visitante',
@@ -98,9 +110,16 @@ function Morador() {
   const usuario = api.obterUsuario()
 
   const [secaoAtiva, setSecaoAtiva] = useState('inicio')
+
   const [autorizacoes, setAutorizacoes] = useState([])
   const [carregandoAutorizacoes, setCarregandoAutorizacoes] = useState(false)
   const [erroAutorizacoes, setErroAutorizacoes] = useState('')
+
+  const [solicitacoes, setSolicitacoes] = useState([])
+  const [carregandoSolicitacoes, setCarregandoSolicitacoes] = useState(false)
+  const [erroSolicitacoes, setErroSolicitacoes] = useState('')
+  const [mensagemSolicitacao, setMensagemSolicitacao] = useState('')
+  const [solicitacaoEmProcessamento, setSolicitacaoEmProcessamento] = useState(null)
 
   const secaoAtual = secoes.find(
     (secao) => secao.id === secaoAtiva
@@ -127,11 +146,41 @@ function Morador() {
     }
   }, [])
 
+  const carregarSolicitacoes = useCallback(async () => {
+    setCarregandoSolicitacoes(true)
+    setErroSolicitacoes('')
+
+    try {
+      const resposta = await api.get('/visitantes/solicitacoes')
+
+      setSolicitacoes(
+        Array.isArray(resposta?.solicitacoes)
+          ? resposta.solicitacoes
+          : []
+      )
+    } catch (error) {
+      setErroSolicitacoes(
+        error.message || 'Não foi possível carregar as solicitações.'
+      )
+    } finally {
+      setCarregandoSolicitacoes(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (secaoAtiva === 'autorizacoes') {
       carregarAutorizacoes()
     }
-  }, [secaoAtiva, carregarAutorizacoes])
+
+    if (secaoAtiva === 'visitantes') {
+      setMensagemSolicitacao('')
+      carregarSolicitacoes()
+    }
+  }, [
+    secaoAtiva,
+    carregarAutorizacoes,
+    carregarSolicitacoes
+  ])
 
   function handleLogout() {
     api.limparSessao()
@@ -140,6 +189,42 @@ function Morador() {
 
   function navegarPara(secao) {
     setSecaoAtiva(secao)
+  }
+
+  async function responderSolicitacao(solicitacao, status) {
+    const acao = status === 'AUTORIZADA' ? 'aprovar' : 'recusar'
+
+    const confirmado = window.confirm(
+      `Tem certeza de que deseja ${acao} a solicitação de ${solicitacao.nome}?`
+    )
+
+    if (!confirmado) return
+
+    setSolicitacaoEmProcessamento(solicitacao.id)
+    setErroSolicitacoes('')
+    setMensagemSolicitacao('')
+
+    try {
+      const resposta = await api.patch(
+        `/visitantes/solicitacoes/${solicitacao.id}/resposta`,
+        { status }
+      )
+
+      setMensagemSolicitacao(
+        resposta?.mensagem ||
+        (status === 'AUTORIZADA'
+          ? 'Solicitação autorizada com sucesso.'
+          : 'Solicitação recusada com sucesso.')
+      )
+
+      await carregarSolicitacoes()
+    } catch (error) {
+      setErroSolicitacoes(
+        error.message || 'Não foi possível responder à solicitação.'
+      )
+    } finally {
+      setSolicitacaoEmProcessamento(null)
+    }
   }
 
   function renderizarAutorizacoes() {
@@ -281,6 +366,171 @@ function Morador() {
     )
   }
 
+  function renderizarSolicitacoes() {
+    if (carregandoSolicitacoes) {
+      return (
+        <div className="morador-feedback">
+          <div className="morador-loading" />
+          <p>Carregando solicitações de visitantes...</p>
+        </div>
+      )
+    }
+
+    if (erroSolicitacoes && solicitacoes.length === 0) {
+      return (
+        <div className="morador-feedback morador-feedback-erro">
+          <h3>Não foi possível carregar as solicitações.</h3>
+          <p>{erroSolicitacoes}</p>
+
+          <button
+            type="button"
+            onClick={carregarSolicitacoes}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <>
+        {mensagemSolicitacao && (
+          <div className="morador-feedback morador-feedback-sucesso">
+            <p>{mensagemSolicitacao}</p>
+          </div>
+        )}
+
+        {erroSolicitacoes && (
+          <div className="morador-feedback morador-feedback-erro">
+            <p>{erroSolicitacoes}</p>
+          </div>
+        )}
+
+        {solicitacoes.length === 0 ? (
+          <div className="morador-feedback">
+            <div className="morador-empty-icon">♙</div>
+            <h3>Nenhuma solicitação pendente</h3>
+            <p>
+              Quando um visitante solicitar acesso ao seu apartamento,
+              a solicitação aparecerá nesta área.
+            </p>
+
+            <button
+              type="button"
+              onClick={carregarSolicitacoes}
+              disabled={carregandoSolicitacoes}
+            >
+              Atualizar lista
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="morador-autorizacoes-toolbar">
+              <p>
+                {solicitacoes.length}{' '}
+                {solicitacoes.length === 1
+                  ? 'solicitação pendente'
+                  : 'solicitações pendentes'}
+              </p>
+
+              <button
+                type="button"
+                onClick={carregarSolicitacoes}
+                disabled={carregandoSolicitacoes || solicitacaoEmProcessamento !== null}
+              >
+                ↻ Atualizar
+              </button>
+            </div>
+
+            <div className="morador-autorizacoes-lista">
+              {solicitacoes.map((solicitacao) => {
+                const processando =
+                  solicitacaoEmProcessamento === solicitacao.id
+
+                const existeProcessamento =
+                  solicitacaoEmProcessamento !== null
+
+                return (
+                  <article
+                    className="morador-autorizacao-card"
+                    key={solicitacao.id}
+                  >
+                    <div className="morador-autorizacao-header">
+                      <div>
+                        <span className="morador-autorizacao-tipo">
+                          {formatarTipoPessoa(solicitacao.tipo_pessoa)}
+                        </span>
+
+                        <h3>{solicitacao.nome}</h3>
+                      </div>
+
+                      <span className="morador-status morador-status-pendente">
+                        Pendente
+                      </span>
+                    </div>
+
+                    <div className="morador-autorizacao-detalhes">
+                      <div>
+                        <span>CPF</span>
+                        <strong>{solicitacao.cpf}</strong>
+                      </div>
+
+                      <div>
+                        <span>Apartamento</span>
+                        <strong>
+                          {solicitacao.apartamento?.bloco
+                            ? `Bloco ${solicitacao.apartamento.bloco} - `
+                            : ''}
+                          Apto. {solicitacao.apartamento?.numero || 'Não informado'}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Data da solicitação</span>
+                        <strong>
+                          {formatarDataHora(
+                            solicitacao.data_hora_solicitacao
+                          )}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Mensagem</span>
+                        <strong>
+                          {solicitacao.mensagem || 'Nenhuma mensagem informada.'}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="morador-solicitacao-acoes">
+                      <button
+                        type="button"
+                        className="morador-btn-aprovar"
+                        onClick={() => responderSolicitacao(solicitacao, 'AUTORIZADA')}
+                        disabled={existeProcessamento}
+                      >
+                        {processando ? 'Processando...' : 'Aprovar'}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="morador-btn-recusar"
+                        onClick={() => responderSolicitacao(solicitacao, 'NEGADA')}
+                        disabled={existeProcessamento}
+                      >
+                        {processando ? 'Processando...' : 'Recusar'}
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </>
+    )
+  }
+
   return (
     <main className="morador-layout">
       <aside className="morador-sidebar">
@@ -410,6 +660,18 @@ function Morador() {
               </div>
 
               {renderizarAutorizacoes()}
+            </section>
+          ) : secaoAtiva === 'visitantes' ? (
+            <section className="morador-autorizacoes">
+              <div className="morador-section-heading">
+                <h3>Solicitações de visitantes</h3>
+                <p>
+                  Acompanhe as solicitações de entrada destinadas
+                  ao seu apartamento.
+                </p>
+              </div>
+
+              {renderizarSolicitacoes()}
             </section>
           ) : (
             <div className="morador-empty-state">

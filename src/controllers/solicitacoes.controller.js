@@ -217,6 +217,257 @@ async function criarSolicitacaoPublica(req, res) {
     }
 }
 
+// LISTAR SOLICITAÇÕES PENDENTES DO MORADOR.
+async function listarSolicitacoesMorador(req, res) {
+    try {
+        const condominioId = converterId(req.user?.condominio_id);
+        const usuarioId = converterId(req.user?.id);
+
+        if (!condominioId || !usuarioId) {
+            return res.status(401).json({
+                erro: 'Dados de autenticação inválidos.'
+            });
+        }
+
+        if (req.user.tipo_usuario !== 'MORADOR') {
+            return res.status(403).json({
+                erro: 'Apenas moradores podem consultar estas solicitações.'
+            });
+        }
+
+        const morador = await prisma.moradores.findFirst({
+            where: {
+                usuario_id: usuarioId,
+                ativo: true,
+                apartamentos: {
+                    condominio_id: condominioId,
+                    ativo: true
+                }
+            },
+            select: {
+                id: true,
+                apartamentos: {
+                    select: {
+                        id: true,
+                        bloco: true,
+                        numero: true
+                    }
+                }
+            }
+        });
+
+        if (!morador) {
+            return res.status(404).json({
+                erro: 'Cadastro de morador não encontrado ou inativo.'
+            });
+        }
+
+        const solicitacoes = await prisma.solicitacoes_acesso.findMany({
+            where: {
+                condominio_id: condominioId,
+                apartamento_destino_id: morador.apartamentos.id,
+                status: 'PENDENTE'
+            },
+            include: {
+                apartamentos: {
+                    select: {
+                        id: true,
+                        bloco: true,
+                        numero: true
+                    }
+                }
+            },
+            orderBy: {
+                data_hora_solicitacao: 'desc'
+            }
+        });
+
+        return res.status(200).json({
+            total: solicitacoes.length,
+            solicitacoes: solicitacoes.map((solicitacao) => ({
+                id: String(solicitacao.id),
+                nome: solicitacao.nome,
+                cpf: solicitacao.cpf,
+                tipo_pessoa: solicitacao.tipo_pessoa,
+                mensagem: solicitacao.mensagem,
+                status: solicitacao.status,
+                data_hora_solicitacao: solicitacao.data_hora_solicitacao,
+                apartamento: solicitacao.apartamentos
+                    ? {
+                        id: String(solicitacao.apartamentos.id),
+                        bloco: solicitacao.apartamentos.bloco,
+                        numero: solicitacao.apartamentos.numero
+                    }
+                    : null
+            }))
+        });
+
+    } catch (error) {
+        console.error('ERRO AO LISTAR SOLICITAÇÕES DO MORADOR:', error);
+
+        return res.status(500).json({
+            erro: 'Erro ao listar solicitações de acesso.'
+        });
+    }
+}
+
+// APROVAR OU RECUSAR SOLICITAÇÃO DO MORADOR.
+async function responderSolicitacaoMorador(req, res) {
+    try {
+        const condominioId = converterId(req.user?.condominio_id);
+        const usuarioId = converterId(req.user?.id);
+        const solicitacaoId = converterId(req.params.id);
+
+        if (!condominioId || !usuarioId) {
+            return res.status(401).json({
+                erro: 'Dados de autenticação inválidos.'
+            });
+        }
+
+        if (req.user.tipo_usuario !== 'MORADOR') {
+            return res.status(403).json({
+                erro: 'Apenas moradores podem responder solicitações.'
+            });
+        }
+
+        if (!solicitacaoId) {
+            return res.status(400).json({
+                erro: 'ID da solicitação inválido.'
+            });
+        }
+
+        const { status } = req.body || {};
+
+        if (!['AUTORIZADA', 'NEGADA'].includes(status)) {
+            return res.status(400).json({
+                erro: 'Resposta inválida. Utilize AUTORIZADA ou NEGADA.'
+            });
+        }
+
+        // Confirma que o morador está ativo e pertence
+        // a um apartamento ativo do condomínio autenticado.
+        const morador = await prisma.moradores.findFirst({
+            where: {
+                usuario_id: usuarioId,
+                ativo: true,
+                apartamentos: {
+                    condominio_id: condominioId,
+                    ativo: true
+                }
+            },
+            select: {
+                id: true,
+                apartamento_id: true
+            }
+        });
+
+        if (!morador) {
+            return res.status(404).json({
+                erro: 'Cadastro de morador não encontrado ou inativo.'
+            });
+        }
+
+        // Confirma que a solicitação pertence ao apartamento
+        // do morador autenticado.
+        const solicitacaoExistente = await prisma.solicitacoes_acesso.findFirst({
+            where: {
+                id: solicitacaoId,
+                condominio_id: condominioId,
+                apartamento_destino_id: morador.apartamento_id
+            },
+            select: {
+                id: true,
+                status: true
+            }
+        });
+
+        if (!solicitacaoExistente) {
+            return res.status(404).json({
+                erro: 'Solicitação não encontrada para seu apartamento.'
+            });
+        }
+
+        if (solicitacaoExistente.status !== 'PENDENTE') {
+            return res.status(409).json({
+                erro: 'Esta solicitação já foi respondida e não pode ser alterada.'
+            });
+        }
+
+        // Atualização condicional para impedir que dois moradores
+        // respondam à mesma solicitação simultaneamente.
+        const atualizacao = await prisma.solicitacoes_acesso.updateMany({
+            where: {
+                id: solicitacaoId,
+                condominio_id: condominioId,
+                apartamento_destino_id: morador.apartamento_id,
+                status: 'PENDENTE'
+            },
+            data: {
+                status,
+                respondido_por: usuarioId,
+                data_hora_resposta: new Date()
+            }
+        });
+
+        if (atualizacao.count === 0) {
+            return res.status(409).json({
+                erro: 'Esta solicitação já foi respondida por outro morador.'
+            });
+        }
+
+        const solicitacaoAtualizada = await prisma.solicitacoes_acesso.findUnique({
+            where: {
+                id: solicitacaoId
+            },
+            select: {
+                id: true,
+                nome: true,
+                tipo_pessoa: true,
+                status: true,
+                respondido_por: true,
+                data_hora_solicitacao: true,
+                data_hora_resposta: true,
+                apartamentos: {
+                    select: {
+                        bloco: true,
+                        numero: true
+                    }
+                }
+            }
+        });
+
+        return res.status(200).json({
+            mensagem: status === 'AUTORIZADA'
+                ? 'Solicitação autorizada com sucesso.'
+                : 'Solicitação recusada com sucesso.',
+            solicitacao: {
+                id: String(solicitacaoAtualizada.id),
+                nome: solicitacaoAtualizada.nome,
+                tipo_pessoa: solicitacaoAtualizada.tipo_pessoa,
+                status: solicitacaoAtualizada.status,
+                respondido_por: String(solicitacaoAtualizada.respondido_por),
+                data_hora_solicitacao: solicitacaoAtualizada.data_hora_solicitacao,
+                data_hora_resposta: solicitacaoAtualizada.data_hora_resposta,
+                apartamento: solicitacaoAtualizada.apartamentos
+                    ? {
+                        bloco: solicitacaoAtualizada.apartamentos.bloco,
+                        numero: solicitacaoAtualizada.apartamentos.numero
+                    }
+                    : null
+            }
+        });
+
+    } catch (error) {
+        console.error('ERRO AO RESPONDER SOLICITAÇÃO:', error);
+
+        return res.status(500).json({
+            erro: 'Erro ao responder solicitação de acesso.'
+        });
+    }
+}
+
 module.exports = {
-    criarSolicitacaoPublica
+    criarSolicitacaoPublica,
+    listarSolicitacoesMorador,
+    responderSolicitacaoMorador
 };

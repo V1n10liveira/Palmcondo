@@ -421,6 +421,11 @@
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
+  transition: 0.2s;
+}
+
+.morador-autorizacoes-toolbar button:hover {
+  background: #eec300;
 }
 
 .morador-autorizacoes-toolbar button:disabled {
@@ -533,6 +538,57 @@
   overflow-wrap: anywhere;
 }
 
+/* AÇÕES DAS SOLICITAÇÕES DE VISITANTES */
+
+.morador-solicitacao-acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.morador-solicitacao-acoes button {
+  min-width: 115px;
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.morador-btn-aprovar {
+  color: #fff;
+  background: #218348;
+  border-color: #218348;
+}
+
+.morador-btn-aprovar:hover:not(:disabled) {
+  background: #176b37;
+  box-shadow: 0 3px 9px rgba(33, 131, 72, 0.18);
+  transform: translateY(-1px);
+}
+
+.morador-btn-recusar {
+  color: #fff;
+  background: #c43d3d;
+  border-color: #c43d3d;
+}
+
+.morador-btn-recusar:hover:not(:disabled) {
+  background: #a92e2e;
+  box-shadow: 0 3px 9px rgba(196, 61, 61, 0.18);
+  transform: translateY(-1px);
+}
+
+.morador-solicitacao-acoes button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* CARREGAMENTO, ERROS E LISTA VAZIA */
 
 .morador-feedback {
@@ -579,6 +635,29 @@
 
 .morador-feedback-erro h3 {
   color: #a12d2d;
+}
+
+/* MENSAGEM COMPACTA DE SUCESSO */
+
+.morador-feedback-sucesso {
+  min-height: auto;
+  display: block;
+  margin-bottom: 16px;
+  padding: 13px 17px;
+  color: #176b37;
+  background: #edf8f0;
+  border: 1px solid #ccebd4;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.morador-feedback-sucesso p {
+  max-width: none;
+  margin: 0;
+  color: #176b37;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .morador-loading {
@@ -705,6 +784,16 @@
 
   .morador-autorizacoes-toolbar {
     align-items: flex-start;
+  }
+
+  .morador-solicitacao-acoes {
+    gap: 8px;
+  }
+
+  .morador-solicitacao-acoes button {
+    min-width: 0;
+    flex: 1;
+    padding: 11px 12px;
   }
 }
 

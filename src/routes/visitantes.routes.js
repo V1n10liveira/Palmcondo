@@ -8,7 +8,9 @@ const {
 } = require('../controllers/visitantes.controller');
 
 const {
-    criarSolicitacaoPublica
+    criarSolicitacaoPublica,
+    listarSolicitacoesMorador,
+    responderSolicitacaoMorador
 } = require('../controllers/solicitacoes.controller');
 
 const authMiddleware = require('../middlewares/auth.middleware');
@@ -17,6 +19,20 @@ const router = express.Router();
 
 // Solicitação pública de acesso por visitante.
 router.post('/solicitacoes', criarSolicitacaoPublica);
+
+// Lista solicitações pendentes do morador autenticado.
+router.get(
+    '/solicitacoes',
+    authMiddleware,
+    listarSolicitacoesMorador
+);
+
+// Aprova ou recusa uma solicitação de acesso.
+router.patch(
+    '/solicitacoes/:id/resposta',
+    authMiddleware,
+    responderSolicitacaoMorador
+);
 
 // Lista os visitantes vinculados ao morador autenticado.
 router.get('/', authMiddleware, listarVisitantes);

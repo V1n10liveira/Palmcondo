@@ -101,6 +101,12 @@ export const api = {
       body: JSON.stringify(dados),
     })
   },
+  patch(endpoint, dados) {
+    return requisicao(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(dados),
+    })
+  },
 
   delete(endpoint) {
     return requisicao(endpoint, {
