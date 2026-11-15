@@ -2,17 +2,35 @@
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, '')
 
 const TOKEN_KEY = 'palmcondo_token'
+const USUARIO_KEY = 'palmcondo_usuario'
 
 function obterToken() {
   return sessionStorage.getItem(TOKEN_KEY)
 }
 
-function salvarToken(token) {
-  sessionStorage.setItem(TOKEN_KEY, token)
+function obterUsuario() {
+  const usuario = sessionStorage.getItem(USUARIO_KEY)
+
+  if (!usuario) {
+    return null
+  }
+
+  try {
+    return JSON.parse(usuario)
+  } catch {
+    sessionStorage.removeItem(USUARIO_KEY)
+    return null
+  }
 }
 
-function limparToken() {
+function salvarSessao(token, usuario) {
+  sessionStorage.setItem(TOKEN_KEY, token)
+  sessionStorage.setItem(USUARIO_KEY, JSON.stringify(usuario))
+}
+
+function limparSessao() {
   sessionStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(USUARIO_KEY)
 }
 
 async function requisicao(endpoint, options = {}) {
@@ -90,9 +108,8 @@ export const api = {
     })
   },
 
-  salvarToken,
-
+  salvarSessao,
   obterToken,
-
-  limparToken,
+  obterUsuario,
+  limparSessao,
 }

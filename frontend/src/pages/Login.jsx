@@ -1,15 +1,27 @@
 
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import './Login.css'
 
 function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="4" y="10" width="16" height="11" rx="2"
-        stroke="currentColor" strokeWidth="2" />
-      <path d="M8 10V7a4 4 0 0 1 8 0v3"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect
+        x="4"
+        y="10"
+        width="16"
+        height="11"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M8 10V7a4 4 0 0 1 8 0v3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -17,40 +29,67 @@ function LockIcon() {
 function EyeIcon({ aberto }) {
   return aberto ? (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
-        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3"
-        stroke="currentColor" strokeWidth="1.8" />
-      <path d="m3 3 18 18"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m3 3 18 18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   ) : (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
-        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3"
-        stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
     </svg>
   )
 }
 
 function Login() {
+  const navigate = useNavigate()
+
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
-  const [sucesso, setSucesso] = useState('')
 
   useEffect(() => {
-    if (!sucesso) return
+    const token = api.obterToken()
+    const usuario = api.obterUsuario()
 
-    const temporizador = setTimeout(() => {
-      setSucesso('')
-    }, 10000)
+    if (token && usuario) {
+      navigate('/painel', { replace: true })
+      return
+    }
 
-    return () => clearTimeout(temporizador)
-  }, [sucesso])
+    if (token || usuario) {
+      api.limparSessao()
+    }
+  }, [navigate])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -58,7 +97,6 @@ function Login() {
     if (carregando) return
 
     setErro('')
-    setSucesso('')
 
     if (!email.trim() || !senha) {
       setErro('Informe seu e-mail e sua senha.')
@@ -77,11 +115,9 @@ function Login() {
         throw new Error('Resposta de autenticação inválida.')
       }
 
-      api.salvarToken(resposta.token)
+      api.salvarSessao(resposta.token, resposta.usuario)
 
-      setSucesso(
-        `Bem-vindo, ${resposta.usuario.nome}! Autenticação realizada com sucesso.`
-      )
+      navigate('/painel', { replace: true })
     } catch (error) {
       setErro(error.message || 'Não foi possível realizar o login.')
     } finally {
@@ -131,12 +167,6 @@ function Login() {
             </div>
           )}
 
-          {sucesso && (
-            <div className="alert alert-success" role="status">
-              {sucesso}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="email" className="form-label">
@@ -153,7 +183,6 @@ function Login() {
                 onChange={(event) => {
                   setEmail(event.target.value)
                   setErro('')
-                  setSucesso('')
                 }}
                 required
                 disabled={carregando}
@@ -176,7 +205,6 @@ function Login() {
                   onChange={(event) => {
                     setSenha(event.target.value)
                     setErro('')
-                    setSucesso('')
                   }}
                   required
                   disabled={carregando}
