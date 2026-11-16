@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import Home from './pages/Home'
+import ComoFunciona from './pages/ComoFunciona'
 import Visitante from './pages/Visitante'
 import Login from './pages/Login'
 import Painel from './pages/Painel'
@@ -14,6 +15,11 @@ function App() {
       <Routes>
         {/* Páginas públicas */}
         <Route path="/" element={<Home />} />
+
+        <Route
+          path="/como-funciona"
+          element={<ComoFunciona />}
+        />
 
         <Route
           path="/visitante/:codigo"

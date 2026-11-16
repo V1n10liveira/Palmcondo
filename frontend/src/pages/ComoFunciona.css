@@ -1,0 +1,598 @@
+
+.como-page {
+  --pc-yellow: #ffd000;
+  --pc-black: #171717;
+  --pc-text: #242424;
+  --pc-muted: #737373;
+  --pc-background: #f7f7f4;
+
+  width: 100%;
+  max-width: 1440px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0 7%;
+  color: var(--pc-text);
+  background: var(--pc-background);
+}
+
+.como-header {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e9e9e3;
+}
+
+.como-brand,
+.como-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--pc-black);
+  font-size: 23px;
+  font-weight: 850;
+  letter-spacing: -1px;
+  text-decoration: none;
+}
+
+.como-brand > span:last-child span {
+  font-weight: 500;
+}
+
+.como-brand-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  color: var(--pc-black);
+  background: var(--pc-yellow);
+  border-radius: 13px;
+  box-shadow: 0 4px 12px #1717171f;
+}
+
+.como-brand-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.como-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 19px;
+  color: white;
+  background: var(--pc-black);
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.como-login:hover {
+  color: white;
+  transform: translateY(-2px);
+}
+
+.como-login svg,
+.como-final-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.como-hero {
+  max-width: 950px;
+  padding: 76px 0 65px;
+}
+
+.como-eyebrow,
+.como-section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #806400;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+}
+
+.como-eyebrow > span {
+  width: 8px;
+  height: 8px;
+  background: #e7b900;
+  border-radius: 50%;
+}
+
+.como-hero h1 {
+  margin: 22px 0 18px;
+  color: var(--pc-black);
+  font-size: clamp(38px, 5vw, 59px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -2.5px;
+}
+
+.como-hero h1 span {
+  position: relative;
+  z-index: 0;
+}
+
+.como-hero h1 span::after {
+  position: absolute;
+  z-index: -1;
+  right: -4px;
+  bottom: 3px;
+  left: -4px;
+  height: 14px;
+  content: "";
+  background: var(--pc-yellow);
+  opacity: 0.85;
+}
+
+.como-hero > p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--pc-muted);
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.como-modules {
+  padding: 55px 0 75px;
+  border-top: 1px solid #e8e8e1;
+}
+
+.como-section-heading {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.como-section-heading h2 {
+  margin: 10px 0 8px;
+  color: var(--pc-black);
+  font-size: clamp(27px, 3vw, 36px);
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.como-section-heading p {
+  max-width: 600px;
+  margin: 0 auto;
+  color: var(--pc-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.como-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.como-card {
+  min-height: 230px;
+  padding: 25px;
+  background: white;
+  border: 1px solid #eaeae4;
+  border-radius: 15px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.como-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 35px #1717170c;
+}
+
+.como-card-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.como-card-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.como-card-icon.dark {
+  color: white;
+  background: #242424;
+}
+
+.como-card-icon.yellow {
+  color: #171717;
+  background: #fff1b7;
+}
+
+.como-card h3 {
+  margin: 19px 0 8px;
+  color: var(--pc-black);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.como-card p {
+  margin: 0;
+  color: var(--pc-muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.como-flow {
+  padding: 65px 0 75px;
+  border-top: 1px solid #e8e8e1;
+}
+
+.como-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.como-flow-step {
+  padding: 24px 20px;
+  background: white;
+  border: 1px solid #eaeae4;
+  border-radius: 14px;
+}
+
+.como-step-number {
+  color: #a17d00;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 1px;
+}
+
+.como-flow-step h3 {
+  margin: 14px 0 8px;
+  color: var(--pc-black);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.como-flow-step p {
+  margin: 0;
+  color: var(--pc-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.como-custom {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin: 0 0 45px;
+  padding: 34px;
+  color: white;
+  background: #202020;
+  border-radius: 17px;
+}
+
+.como-custom-icon {
+  width: 55px;
+  height: 55px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px;
+  color: var(--pc-black);
+  background: var(--pc-yellow);
+  border-radius: 14px;
+}
+
+.como-custom-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.como-custom-content > span {
+  color: var(--pc-yellow);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.como-custom h2 {
+  max-width: 760px;
+  margin: 9px 0;
+  color: white;
+  font-size: clamp(21px, 3vw, 28px);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.como-custom p {
+  max-width: 800px;
+  margin: 0;
+  color: #c0c0c0;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.como-contact {
+  display: block;
+  margin-bottom: 60px;
+  padding: 38px;
+  background: white;
+  border: 1px solid #eaeae4;
+  border-radius: 17px;
+}
+
+.como-contact-content h2 {
+  max-width: 570px;
+  margin: 12px 0 10px;
+  color: var(--pc-black);
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+
+.como-contact-content > p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--pc-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.como-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 25px;
+}
+
+.como-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  color: var(--pc-black);
+  background: #f8f8f5;
+  border: 1px solid #ecece5;
+  border-radius: 11px;
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.como-contact-item:hover {
+  color: var(--pc-black);
+  border-color: #d8b400;
+  transform: translateY(-2px);
+}
+
+.como-contact-icon {
+  width: 39px;
+  height: 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 10px;
+  color: var(--pc-black);
+  background: #ffed9c;
+  border-radius: 9px;
+}
+
+.como-contact-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.como-contact-item small,
+.como-contact-item strong {
+  display: block;
+}
+
+.como-contact-item small {
+  margin-bottom: 3px;
+  color: var(--pc-muted);
+  font-size: 10px;
+}
+
+.como-contact-item strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.como-final {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60px;
+  padding: 45px 25px;
+  background: #fff;
+  border: 1px solid #eaeae4;
+  border-radius: 17px;
+  text-align: center;
+}
+
+.como-final h2 {
+  max-width: 650px;
+  margin: 0 0 9px;
+  color: var(--pc-black);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.como-final p {
+  max-width: 600px;
+  margin: 0;
+  color: var(--pc-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.como-final-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 23px;
+  padding: 14px 20px;
+  color: var(--pc-black);
+  background: var(--pc-yellow);
+  border: 1px solid var(--pc-yellow);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.como-final-button:hover {
+  color: var(--pc-black);
+  transform: translateY(-2px);
+}
+
+.como-footer {
+  min-height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-top: 1px solid #e8e8e1;
+}
+
+.como-footer-brand {
+  font-size: 16px;
+}
+
+.como-footer > span {
+  color: #888;
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .como-page {
+    padding-right: 5%;
+    padding-left: 5%;
+  }
+
+  .como-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .como-flow-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .como-page {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .como-header {
+    min-height: 72px;
+  }
+
+  .como-brand {
+    font-size: 20px;
+  }
+
+  .como-brand-icon {
+    width: 43px;
+    height: 43px;
+    padding: 9px;
+  }
+
+  .como-login {
+    padding: 10px 13px;
+    font-size: 12px;
+  }
+
+  .como-hero {
+    padding: 55px 0 45px;
+  }
+
+  .como-hero h1 {
+    font-size: clamp(35px, 9vw, 48px);
+    letter-spacing: -2px;
+  }
+
+  .como-hero > p {
+    font-size: 14px;
+  }
+
+  .como-modules {
+    padding: 42px 0;
+  }
+
+  .como-grid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .como-card {
+    min-height: auto;
+    padding: 22px;
+  }
+
+  .como-flow {
+    padding: 45px 0;
+  }
+
+  .como-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .como-custom {
+    flex-direction: column;
+    gap: 17px;
+    margin-bottom: 35px;
+    padding: 23px;
+  }
+
+  .como-contact {
+    margin-bottom: 40px;
+    padding: 23px;
+  }
+
+  .como-contact-actions {
+    flex-direction: column;
+  }
+
+  .como-contact-item {
+    width: 100%;
+  }
+
+  .como-final {
+    margin-bottom: 40px;
+    padding: 32px 20px;
+  }
+
+  .como-footer {
+    min-height: 85px;
+    flex-wrap: wrap;
+    padding: 15px 0;
+  }
+
+  .como-footer > span:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .como-page {
+    padding-right: 15px;
+    padding-left: 15px;
+  }
+
+  .como-hero h1 {
+    font-size: 34px;
+  }
+
+  .como-contact {
+    padding: 18px;
+  }
+}

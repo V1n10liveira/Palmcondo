@@ -1,3 +1,4 @@
+
 import '../App.css'
 
 function ShieldIcon() {
@@ -24,31 +25,14 @@ function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect
-        x="4"
-        y="10"
-        width="16"
-        height="11"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="2"
+        x="4" y="10" width="16" height="11" rx="2"
+        stroke="currentColor" strokeWidth="2"
       />
       <path
         d="M8 10V7a4 4 0 0 1 8 0v3"
-        stroke="currentColor"
-        strokeWidth="2"
+        stroke="currentColor" strokeWidth="2"
         strokeLinecap="round"
       />
-    </svg>
-  )
-}
-
-function QrIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M14 14h3v3h-3zM20 14v2M17 20h4M20 18v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -56,17 +40,54 @@ function QrIcon() {
 function UsersIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+        stroke="currentColor" strokeWidth="1.8"
+        strokeLinecap="round"
+      />
       <circle cx="10" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        stroke="currentColor" strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
 
-function ArrowIcon() {
+function ClipboardIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="5" y="4" width="14" height="18" rx="2"
+        stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9 4V2h6v2M8 11h8M8 15h8"
+        stroke="currentColor" strokeWidth="1.8"
+        strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function HistoryIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"
+        stroke="currentColor" strokeWidth="1.8"
+        strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 3v5h5M12 7v5l3 2"
+        stroke="currentColor" strokeWidth="1.8"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function BuildingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="4" y="2" width="16" height="20" rx="2"
+        stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9 6h2M14 6h2M9 10h2M14 10h2M9 14h2M14 14h2M10 22v-4h4v4"
+        stroke="currentColor" strokeWidth="1.8"
+        strokeLinecap="round" />
     </svg>
   )
 }
@@ -83,10 +104,13 @@ function App() {
         </a>
 
         <nav className="header-navigation" aria-label="Navegação principal">
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#acessos">Acessos</a>
-          <a className="header-login" href="#moradores">
-            Entrar <ArrowIcon />
+          <a className="header-login" href="/login">
+            Entrar
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14m-6-6 6 6-6 6"
+                stroke="currentColor" strokeWidth="1.8"
+                strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </a>
         </nav>
       </header>
@@ -113,11 +137,13 @@ function App() {
           </p>
 
           <div className="hero-actions">
-            <a className="primary-button" href="#acessos">
-              Conheça os acessos <ArrowIcon />
-            </a>
-            <a className="secondary-button" href="#como-funciona">
-              Como funciona
+            <a className="primary-button" href="/como-funciona">
+              Conheça o PalmCondo
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h14m-6-6 6 6-6 6"
+                  stroke="currentColor" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </a>
           </div>
 
@@ -127,110 +153,73 @@ function App() {
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="Ilustração conceitual do PalmCondo">
+        <div className="hero-visual" aria-label="Apresentação das funcionalidades do PalmCondo">
           <div className="visual-decoration decoration-one" />
           <div className="visual-decoration decoration-two" />
 
           <div className="visual-card">
-            <div className="visual-card-header">
-              <div className="visual-brand">
-                <span className="mini-brand-icon"><ShieldIcon /></span>
-                <div>
-                  <strong>PalmCondo</strong>
-                  <small>ACESSO INTELIGENTE</small>
-                </div>
-              </div>
-              <span className="visual-menu">•••</span>
-            </div>
-
             <div className="visual-highlight">
-              <div className="visual-highlight-icon">
-                <ShieldIcon />
-              </div>
               <div>
-                <span>GESTÃO DE ACESSO</span>
-                <strong>Mais controle para seu condomínio</strong>
+                <span>CONTROLE INTELIGENTE</span>
+                <strong>Seu condomínio mais organizado e seguro</strong>
               </div>
             </div>
 
-            <div className="visual-option">
-              <div className="option-icon yellow-icon"><QrIcon /></div>
-              <div>
-                <strong>Visitantes</strong>
-                <small>Solicitação de acesso por QR Code</small>
+            <div className="visual-features-grid">
+              <div className="visual-feature">
+                <span className="feature-icon dark-icon">
+                  <UsersIcon />
+                </span>
+                <strong>Moradores</strong>
+                <small>Cadastro e gestão</small>
               </div>
-              <ArrowIcon />
-            </div>
 
-            <div className="visual-option">
-              <div className="option-icon dark-icon"><UsersIcon /></div>
-              <div>
-                <strong>Moradores e equipe</strong>
-                <small>Acesso à área autenticada</small>
+              <div className="visual-feature">
+                <span className="feature-icon yellow-icon">
+                  <ClipboardIcon />
+                </span>
+                <strong>Autorizações</strong>
+                <small>Controle de permissões</small>
               </div>
-              <ArrowIcon />
-            </div>
 
-            <div className="security-label">
-              <span className="security-icon"><ShieldIcon /></span>
-              <div>
-                <strong>Segurança digital</strong>
-                <small>Controle organizado de acessos</small>
+              <div className="visual-feature">
+                <span className="feature-icon yellow-icon">
+                  <HistoryIcon />
+                </span>
+                <strong>Histórico</strong>
+                <small>Registros de acesso</small>
+              </div>
+
+              <div className="visual-feature">
+                <span className="feature-icon dark-icon">
+                  <BuildingIcon />
+                </span>
+                <strong>Administração</strong>
+                <small>Gestão do condomínio</small>
               </div>
             </div>
 
             <div className="visual-card-footer">
               <span className="footer-dot" />
-              SIMPLES · ORGANIZADO · SEGURO
+              ORGANIZAÇÃO · CONTROLE · SEGURANÇA
             </div>
           </div>
         </div>
       </section>
 
-      <section className="access-section" id="acessos">
-        <div className="section-heading">
-          <span>COMECE POR AQUI</span>
-          <h2>Como deseja acessar?</h2>
-          <p>Escolha a opção correspondente ao seu perfil.</p>
+      <section className="about-section">
+        <div className="about-icon">
+          <ShieldIcon />
         </div>
-
-        <div className="access-grid">
-          <article className="access-card visitor-card" id="visitantes">
-            <div className="access-card-icon"><QrIcon /></div>
-            <span className="card-kicker">ACESSO PÚBLICO</span>
-            <h3>Sou visitante</h3>
-            <p>
-              Utilize o QR Code disponibilizado pelo condomínio
-              para iniciar sua solicitação de acesso.
-            </p>
-            <a href="#visitantes" className="card-link">
-              Acessar como visitante <ArrowIcon />
-            </a>
-          </article>
-
-          <article className="access-card resident-card" id="moradores">
-            <div className="access-card-icon"><UsersIcon /></div>
-            <span className="card-kicker">ÁREA RESTRITA</span>
-            <h3>Sou morador ou colaborador</h3>
-            <p>
-              Entre com suas credenciais para acessar as
-              funcionalidades disponíveis para seu perfil.
-            </p>
-            <a href="#moradores" className="card-link">
-              Acessar minha conta <ArrowIcon />
-            </a>
-          </article>
-        </div>
-      </section>
-
-      <section className="about-section" id="como-funciona">
-        <div className="about-icon"><ShieldIcon /></div>
         <div>
           <span>PALMCONDO</span>
-          <h2>Mais organização para o acesso. Mais tranquilidade para todos.</h2>
+          <h2>
+            Mais organização para o acesso.
+            Mais tranquilidade para todos.
+          </h2>
           <p>
             Uma plataforma desenvolvida para facilitar a gestão
-            de entradas e autorizações em condomínios residenciais.
+            de entradas, saídas e autorizações em condomínios residenciais.
           </p>
         </div>
       </section>
