@@ -21,7 +21,7 @@ const secoes = [
     id: 'visitantes',
     nome: 'Visitantes',
     icone: '♙',
-    descricao: 'Gerencie os visitantes vinculados a você.'
+    descricao: 'Gerencie as solicitações e autorizações de visitantes.'
   },
   {
     id: 'prestadores',
@@ -70,6 +70,29 @@ const statusAutorizacao = {
   }
 }
 
+const statusSolicitacao = {
+  PENDENTE: {
+    nome: 'Pendente',
+    classe: 'pendente'
+  },
+  AUTORIZADA: {
+    nome: 'Autorizada',
+    classe: 'ativa'
+  },
+  EXPIRADA: {
+    nome: 'Expirada',
+    classe: 'expirada'
+  },
+  NEGADA: {
+    nome: 'Recusada',
+    classe: 'recusada'
+  },
+  CANCELADA: {
+    nome: 'Cancelada',
+    classe: 'cancelada'
+  }
+}
+
 function formatarData(data) {
   if (!data) return 'Não informada'
 
@@ -94,6 +117,20 @@ function formatarDataHora(data) {
   }
 
   return dataObj.toLocaleString('pt-BR')
+}
+
+function calcularExpiracao(dataAprovacao) {
+  if (!dataAprovacao) return null
+
+  const data = new Date(dataAprovacao)
+
+  if (Number.isNaN(data.getTime())) {
+    return null
+  }
+
+  data.setHours(data.getHours() + 24)
+
+  return data
 }
 
 function formatarTipoPessoa(tipo) {
@@ -366,6 +403,138 @@ function Morador() {
     )
   }
 
+  function renderizarCartaoSolicitacao(solicitacao) {
+    const status =
+      statusSolicitacao[solicitacao.status] || {
+        nome: solicitacao.status || 'Não informado',
+        classe: 'desconhecido'
+      }
+
+    const processando =
+      solicitacaoEmProcessamento === solicitacao.id
+
+    const existeProcessamento =
+      solicitacaoEmProcessamento !== null
+
+    const dataExpiracao =
+      solicitacao.status === 'AUTORIZADA'
+        ? calcularExpiracao(solicitacao.data_hora_resposta)
+        : null
+
+    return (
+      <article
+        className="morador-autorizacao-card"
+        key={solicitacao.id}
+      >
+        <div className="morador-autorizacao-header">
+          <div>
+            <span className="morador-autorizacao-tipo">
+              {formatarTipoPessoa(solicitacao.tipo_pessoa)}
+            </span>
+
+            <h3>{solicitacao.nome}</h3>
+          </div>
+
+          <span className={`morador-status morador-status-${status.classe}`}>
+            {status.nome}
+          </span>
+        </div>
+
+        <div className="morador-autorizacao-detalhes">
+          <div>
+            <span>CPF</span>
+            <strong>{solicitacao.cpf}</strong>
+          </div>
+
+          <div>
+            <span>Apartamento</span>
+            <strong>
+              {solicitacao.apartamento?.bloco
+                ? `Bloco ${solicitacao.apartamento.bloco} - `
+                : ''}
+              Apto. {solicitacao.apartamento?.numero || 'Não informado'}
+            </strong>
+          </div>
+
+          <div>
+            <span>Data da solicitação</span>
+            <strong>
+              {formatarDataHora(solicitacao.data_hora_solicitacao)}
+            </strong>
+          </div>
+
+          {solicitacao.data_hora_resposta && (
+            <div>
+              <span>Data da resposta</span>
+              <strong>
+                {formatarDataHora(solicitacao.data_hora_resposta)}
+              </strong>
+            </div>
+          )}
+
+          {solicitacao.status === 'AUTORIZADA' && dataExpiracao && (
+            <div>
+              <span>Autorização válida até</span>
+              <strong>{dataExpiracao.toLocaleString('pt-BR')}</strong>
+            </div>
+          )}
+
+          {solicitacao.mensagem && (
+            <div>
+              <span>Mensagem do visitante</span>
+              <strong>{solicitacao.mensagem}</strong>
+            </div>
+          )}
+        </div>
+
+        {solicitacao.status === 'AUTORIZADA' && (
+          <div className="morador-autorizacao-aviso">
+            Autorização válida por 24 horas a partir da aprovação.
+          </div>
+        )}
+
+        {solicitacao.status === 'PENDENTE' && (
+          <div className="morador-solicitacao-acoes">
+            <button
+              type="button"
+              className="morador-btn-aprovar"
+              onClick={() => responderSolicitacao(solicitacao, 'AUTORIZADA')}
+              disabled={existeProcessamento}
+            >
+              {processando ? 'Processando...' : 'Aprovar'}
+            </button>
+
+            <button
+              type="button"
+              className="morador-btn-recusar"
+              onClick={() => responderSolicitacao(solicitacao, 'NEGADA')}
+              disabled={existeProcessamento}
+            >
+              {processando ? 'Processando...' : 'Recusar'}
+            </button>
+          </div>
+        )}
+      </article>
+    )
+  }
+
+  function renderizarGrupoSolicitacoes(titulo, itens) {
+    if (itens.length === 0) return null
+
+    return (
+      <section className="morador-grupo-solicitacoes">
+        <div className="morador-grupo-solicitacoes-titulo">
+          <h3>{titulo}</h3>
+          <span>{itens.length}</span>
+        </div>
+
+        <div className="morador-autorizacoes-lista">
+          {itens.map(renderizarCartaoSolicitacao)}
+        </div>
+      </section>
+    )
+  }
+
   function renderizarSolicitacoes() {
     if (carregandoSolicitacoes) {
       return (
@@ -392,6 +561,26 @@ function Morador() {
       )
     }
 
+    const pendentes = solicitacoes.filter(
+      (item) => item.status === 'PENDENTE'
+    )
+
+    const autorizadas = solicitacoes.filter(
+      (item) => item.status === 'AUTORIZADA'
+    )
+
+    const expiradas = solicitacoes.filter(
+      (item) => item.status === 'EXPIRADA'
+    )
+
+    const recusadas = solicitacoes.filter(
+      (item) => item.status === 'NEGADA'
+    )
+
+    const canceladas = solicitacoes.filter(
+      (item) => item.status === 'CANCELADA'
+    )
+
     return (
       <>
         {mensagemSolicitacao && (
@@ -406,10 +595,27 @@ function Morador() {
           </div>
         )}
 
+        <div className="morador-autorizacoes-toolbar">
+          <p>
+            {solicitacoes.length}{' '}
+            {solicitacoes.length === 1
+              ? 'registro encontrado'
+              : 'registros encontrados'}
+          </p>
+
+          <button
+            type="button"
+            onClick={carregarSolicitacoes}
+            disabled={carregandoSolicitacoes || solicitacaoEmProcessamento !== null}
+          >
+            ↻ Atualizar
+          </button>
+        </div>
+
         {solicitacoes.length === 0 ? (
           <div className="morador-feedback">
             <div className="morador-empty-icon">♙</div>
-            <h3>Nenhuma solicitação pendente</h3>
+            <h3>Nenhuma solicitação encontrada</h3>
             <p>
               Quando um visitante solicitar acesso ao seu apartamento,
               a solicitação aparecerá nesta área.
@@ -424,108 +630,13 @@ function Morador() {
             </button>
           </div>
         ) : (
-          <>
-            <div className="morador-autorizacoes-toolbar">
-              <p>
-                {solicitacoes.length}{' '}
-                {solicitacoes.length === 1
-                  ? 'solicitação pendente'
-                  : 'solicitações pendentes'}
-              </p>
-
-              <button
-                type="button"
-                onClick={carregarSolicitacoes}
-                disabled={carregandoSolicitacoes || solicitacaoEmProcessamento !== null}
-              >
-                ↻ Atualizar
-              </button>
-            </div>
-
-            <div className="morador-autorizacoes-lista">
-              {solicitacoes.map((solicitacao) => {
-                const processando =
-                  solicitacaoEmProcessamento === solicitacao.id
-
-                const existeProcessamento =
-                  solicitacaoEmProcessamento !== null
-
-                return (
-                  <article
-                    className="morador-autorizacao-card"
-                    key={solicitacao.id}
-                  >
-                    <div className="morador-autorizacao-header">
-                      <div>
-                        <span className="morador-autorizacao-tipo">
-                          {formatarTipoPessoa(solicitacao.tipo_pessoa)}
-                        </span>
-
-                        <h3>{solicitacao.nome}</h3>
-                      </div>
-
-                      <span className="morador-status morador-status-pendente">
-                        Pendente
-                      </span>
-                    </div>
-
-                    <div className="morador-autorizacao-detalhes">
-                      <div>
-                        <span>CPF</span>
-                        <strong>{solicitacao.cpf}</strong>
-                      </div>
-
-                      <div>
-                        <span>Apartamento</span>
-                        <strong>
-                          {solicitacao.apartamento?.bloco
-                            ? `Bloco ${solicitacao.apartamento.bloco} - `
-                            : ''}
-                          Apto. {solicitacao.apartamento?.numero || 'Não informado'}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Data da solicitação</span>
-                        <strong>
-                          {formatarDataHora(
-                            solicitacao.data_hora_solicitacao
-                          )}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Mensagem</span>
-                        <strong>
-                          {solicitacao.mensagem || 'Nenhuma mensagem informada.'}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="morador-solicitacao-acoes">
-                      <button
-                        type="button"
-                        className="morador-btn-aprovar"
-                        onClick={() => responderSolicitacao(solicitacao, 'AUTORIZADA')}
-                        disabled={existeProcessamento}
-                      >
-                        {processando ? 'Processando...' : 'Aprovar'}
-                      </button>
-
-                      <button
-                        type="button"
-                        className="morador-btn-recusar"
-                        onClick={() => responderSolicitacao(solicitacao, 'NEGADA')}
-                        disabled={existeProcessamento}
-                      >
-                        {processando ? 'Processando...' : 'Recusar'}
-                      </button>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          </>
+          <div className="morador-solicitacoes-grupos">
+            {renderizarGrupoSolicitacoes('Aguardando sua aprovação', pendentes)}
+            {renderizarGrupoSolicitacoes('Autorizações válidas', autorizadas)}
+            {renderizarGrupoSolicitacoes('Autorizações expiradas', expiradas)}
+            {renderizarGrupoSolicitacoes('Solicitações recusadas', recusadas)}
+            {renderizarGrupoSolicitacoes('Solicitações canceladas', canceladas)}
+          </div>
         )}
       </>
     )
@@ -664,10 +775,10 @@ function Morador() {
           ) : secaoAtiva === 'visitantes' ? (
             <section className="morador-autorizacoes">
               <div className="morador-section-heading">
-                <h3>Solicitações de visitantes</h3>
+                <h3>Solicitações e autorizações de visitantes</h3>
                 <p>
-                  Acompanhe as solicitações de entrada destinadas
-                  ao seu apartamento.
+                  Aprove solicitações e acompanhe as autorizações
+                  válidas por 24 horas.
                 </p>
               </div>
 

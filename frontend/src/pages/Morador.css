@@ -513,6 +513,11 @@
   background: #eee;
 }
 
+.morador-status-recusada {
+  color: #a12d2d;
+  background: #ffe8e8;
+}
+
 .morador-autorizacao-detalhes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -536,6 +541,61 @@
   font-size: 11px;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+/* GRUPOS DE SOLICITAÇÕES DE VISITANTES */
+
+.morador-solicitacoes-grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.morador-grupo-solicitacoes {
+  width: 100%;
+}
+
+.morador-grupo-solicitacoes-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 13px;
+}
+
+.morador-grupo-solicitacoes-titulo h3 {
+  margin: 0;
+  color: #252525;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.morador-grupo-solicitacoes-titulo span {
+  min-width: 23px;
+  height: 23px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  color: #5f5f5f;
+  background: #eaeae6;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* AVISO DA AUTORIZAÇÃO DE 24 HORAS */
+
+.morador-autorizacao-aviso {
+  margin-top: 17px;
+  padding: 11px 13px;
+  color: #176b37;
+  background: #edf8f0;
+  border: 1px solid #d5eddb;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
 }
 
 /* AÇÕES DAS SOLICITAÇÕES DE VISITANTES */
@@ -795,10 +855,22 @@
     flex: 1;
     padding: 11px 12px;
   }
+
+  .morador-grupo-solicitacoes-titulo h3 {
+    font-size: 14px;
+  }
+
+  .morador-solicitacoes-grupos {
+    gap: 23px;
+  }
 }
 
 @media (max-width: 380px) {
   .morador-footer span {
     display: none;
+  }
+
+  .morador-grupo-solicitacoes-titulo {
+    flex-wrap: wrap;
   }
 }

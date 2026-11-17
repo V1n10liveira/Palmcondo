@@ -1,6 +1,8 @@
 
 const prisma = require('../lib/prisma');
 
+const TEMPO_AUTORIZACAO_HORAS = 24;
+
 // Valida matematicamente os dígitos verificadores do CPF.
 function validarCPF(cpf) {
     if (!/^\d{11}$/.test(cpf)) {
@@ -217,7 +219,7 @@ async function criarSolicitacaoPublica(req, res) {
     }
 }
 
-// LISTAR SOLICITAÇÕES PENDENTES DO MORADOR.
+// LISTAR SOLICITAÇÕES E AUTORIZAÇÕES DO MORADOR.
 async function listarSolicitacoesMorador(req, res) {
     try {
         const condominioId = converterId(req.user?.condominio_id);
@@ -246,6 +248,7 @@ async function listarSolicitacoesMorador(req, res) {
             },
             select: {
                 id: true,
+                apartamento_id: true,
                 apartamentos: {
                     select: {
                         id: true,
@@ -262,11 +265,42 @@ async function listarSolicitacoesMorador(req, res) {
             });
         }
 
+        // Calcula o limite de 24 horas a partir da aprovação.
+        const limiteExpiracao = new Date(
+            Date.now() - TEMPO_AUTORIZACAO_HORAS * 60 * 60 * 1000
+        );
+
+        // Atualiza somente autorizações de visitantes vencidas.
+        await prisma.solicitacoes_acesso.updateMany({
+            where: {
+                tipo_pessoa: 'VISITANTE',
+                condominio_id: condominioId,
+                apartamento_destino_id: morador.apartamento_id,
+                status: 'AUTORIZADA',
+                data_hora_resposta: {
+                    lte: limiteExpiracao
+                }
+            },
+            data: {
+                status: 'EXPIRADA'
+            }
+        });
+
+        // Retorna somente solicitações de visitantes do apartamento.
         const solicitacoes = await prisma.solicitacoes_acesso.findMany({
             where: {
+                tipo_pessoa: 'VISITANTE',
                 condominio_id: condominioId,
-                apartamento_destino_id: morador.apartamentos.id,
-                status: 'PENDENTE'
+                apartamento_destino_id: morador.apartamento_id,
+                status: {
+                    in: [
+                        'PENDENTE',
+                        'AUTORIZADA',
+                        'NEGADA',
+                        'EXPIRADA',
+                        'CANCELADA'
+                    ]
+                }
             },
             include: {
                 apartamentos: {
@@ -292,6 +326,10 @@ async function listarSolicitacoesMorador(req, res) {
                 mensagem: solicitacao.mensagem,
                 status: solicitacao.status,
                 data_hora_solicitacao: solicitacao.data_hora_solicitacao,
+                data_hora_resposta: solicitacao.data_hora_resposta,
+                validade_horas: solicitacao.status === 'AUTORIZADA'
+                    ? TEMPO_AUTORIZACAO_HORAS
+                    : null,
                 apartamento: solicitacao.apartamentos
                     ? {
                         id: String(solicitacao.apartamentos.id),
@@ -344,8 +382,6 @@ async function responderSolicitacaoMorador(req, res) {
             });
         }
 
-        // Confirma que o morador está ativo e pertence
-        // a um apartamento ativo do condomínio autenticado.
         const morador = await prisma.moradores.findFirst({
             where: {
                 usuario_id: usuarioId,
@@ -367,8 +403,6 @@ async function responderSolicitacaoMorador(req, res) {
             });
         }
 
-        // Confirma que a solicitação pertence ao apartamento
-        // do morador autenticado.
         const solicitacaoExistente = await prisma.solicitacoes_acesso.findFirst({
             where: {
                 id: solicitacaoId,
@@ -393,8 +427,6 @@ async function responderSolicitacaoMorador(req, res) {
             });
         }
 
-        // Atualização condicional para impedir que dois moradores
-        // respondam à mesma solicitação simultaneamente.
         const atualizacao = await prisma.solicitacoes_acesso.updateMany({
             where: {
                 id: solicitacaoId,
@@ -438,7 +470,7 @@ async function responderSolicitacaoMorador(req, res) {
 
         return res.status(200).json({
             mensagem: status === 'AUTORIZADA'
-                ? 'Solicitação autorizada com sucesso.'
+                ? 'Solicitação autorizada com sucesso. A autorização será válida por 24 horas.'
                 : 'Solicitação recusada com sucesso.',
             solicitacao: {
                 id: String(solicitacaoAtualizada.id),
@@ -448,6 +480,9 @@ async function responderSolicitacaoMorador(req, res) {
                 respondido_por: String(solicitacaoAtualizada.respondido_por),
                 data_hora_solicitacao: solicitacaoAtualizada.data_hora_solicitacao,
                 data_hora_resposta: solicitacaoAtualizada.data_hora_resposta,
+                validade_horas: status === 'AUTORIZADA'
+                    ? TEMPO_AUTORIZACAO_HORAS
+                    : null,
                 apartamento: solicitacaoAtualizada.apartamentos
                     ? {
                         bloco: solicitacaoAtualizada.apartamentos.bloco,
