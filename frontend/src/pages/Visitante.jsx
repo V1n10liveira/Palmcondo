@@ -75,6 +75,43 @@ function validarCPF(valor) {
   return segundoDigito === Number(cpf[10])
 }
 
+function obterTokenDaURL() {
+  const parametros = new URLSearchParams(
+    window.location.hash.replace(/^#/, '')
+  )
+
+  return parametros.get('token') || ''
+}
+
+function formatarData(data) {
+  if (!data) {
+    return 'Não informada'
+  }
+
+  const dataFormatada = new Date(data)
+
+  if (Number.isNaN(dataFormatada.getTime())) {
+    return 'Não informada'
+  }
+
+  return dataFormatada.toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+}
+
+function obterDescricaoStatus(status) {
+  const descricoes = {
+    PENDENTE: 'Aguardando aprovação do morador',
+    AUTORIZADA: 'Solicitação aprovada',
+    NEGADA: 'Solicitação não autorizada',
+    EXPIRADA: 'Solicitação expirada',
+    CANCELADA: 'Solicitação cancelada',
+  }
+
+  return descricoes[status] || 'Situação não identificada'
+}
+
 function Visitante() {
   const { codigo } = useParams()
 
@@ -87,6 +124,16 @@ function Visitante() {
   const [enviando, setEnviando] = useState(false)
   const [erroSolicitacao, setErroSolicitacao] = useState('')
   const [sucesso, setSucesso] = useState('')
+
+  const [tokenAcompanhamento, setTokenAcompanhamento] = useState(
+    obterTokenDaURL
+  )
+  const [linkAcompanhamento, setLinkAcompanhamento] = useState('')
+  const [acompanhamento, setAcompanhamento] = useState(null)
+  const [carregandoAcompanhamento, setCarregandoAcompanhamento] =
+    useState(false)
+  const [erroAcompanhamento, setErroAcompanhamento] = useState('')
+  const [copiado, setCopiado] = useState(false)
 
   useEffect(() => {
     let cancelado = false
@@ -103,8 +150,10 @@ function Visitante() {
         }
 
         const [dadosCondominio, dadosApartamentos] = await Promise.all([
-          api.get(`/condominios/publico/${encodeURIComponent(codigo)}`),
-          api.get(
+          api.getPublic(
+            `/condominios/publico/${encodeURIComponent(codigo)}`
+          ),
+          api.getPublic(
             `/condominios/publico/${encodeURIComponent(codigo)}/apartamentos`
           ),
         ])
@@ -140,6 +189,57 @@ function Visitante() {
   }, [codigo])
 
   useEffect(() => {
+    if (!tokenAcompanhamento || !codigo) {
+      return
+    }
+
+    let cancelado = false
+
+    async function consultarAcompanhamento() {
+      setCarregandoAcompanhamento(true)
+      setErroAcompanhamento('')
+
+      try {
+        const resposta = await api.getPublic(
+          `/visitantes/solicitacoes/publica/${encodeURIComponent(tokenAcompanhamento)}`
+        )
+
+        const dadosSolicitacao =
+          resposta?.solicitacao ||
+          resposta?.dados?.solicitacao ||
+          resposta?.dados ||
+          resposta
+
+        if (!dadosSolicitacao?.status) {
+          throw new Error('Não foi possível consultar a solicitação.')
+        }
+
+        if (!cancelado) {
+          setAcompanhamento(dadosSolicitacao)
+          setLinkAcompanhamento(window.location.href)
+        }
+      } catch (error) {
+        if (!cancelado) {
+          setErroAcompanhamento(
+            error.message ||
+              'Não foi possível consultar sua solicitação. Verifique o link e tente novamente.'
+          )
+        }
+      } finally {
+        if (!cancelado) {
+          setCarregandoAcompanhamento(false)
+        }
+      }
+    }
+
+    consultarAcompanhamento()
+
+    return () => {
+      cancelado = true
+    }
+  }, [tokenAcompanhamento, codigo])
+
+  useEffect(() => {
     if (!sucesso) {
       return
     }
@@ -171,6 +271,58 @@ function Visitante() {
     }
   }
 
+  async function copiarLinkAcompanhamento() {
+    if (!linkAcompanhamento) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(linkAcompanhamento)
+      setCopiado(true)
+
+      setTimeout(() => {
+        setCopiado(false)
+      }, 3000)
+    } catch {
+      setErroAcompanhamento(
+        'Não foi possível copiar automaticamente. Copie o link manualmente.'
+      )
+    }
+  }
+
+  async function atualizarAcompanhamento() {
+    if (!tokenAcompanhamento) {
+      return
+    }
+
+    setCarregandoAcompanhamento(true)
+    setErroAcompanhamento('')
+
+    try {
+      const resposta = await api.getPublic(
+        `/visitantes/solicitacoes/publica/${encodeURIComponent(tokenAcompanhamento)}`
+      )
+
+      const dadosSolicitacao =
+        resposta?.solicitacao ||
+        resposta?.dados?.solicitacao ||
+        resposta?.dados ||
+        resposta
+
+      if (!dadosSolicitacao?.status) {
+        throw new Error('Não foi possível consultar a solicitação.')
+      }
+
+      setAcompanhamento(dadosSolicitacao)
+    } catch (error) {
+      setErroAcompanhamento(
+        error.message || 'Não foi possível atualizar a solicitação.'
+      )
+    } finally {
+      setCarregandoAcompanhamento(false)
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
 
@@ -191,11 +343,18 @@ function Visitante() {
     const formularioElemento = event.currentTarget
     const formulario = new FormData(formularioElemento)
 
+    const tipoPessoa = formulario.get('tipo_pessoa')?.toString()
     const nome = formulario.get('nome')?.toString().trim()
     const apartamentoId = formulario.get('apartamento')?.toString()
     const mensagem = formulario.get('mensagem')?.toString().trim()
 
-    if (!nome || !apartamentoId || !codigo) {
+    if (
+      !tipoPessoa ||
+      !['VISITANTE', 'PRESTADOR'].includes(tipoPessoa) ||
+      !nome ||
+      !apartamentoId ||
+      !codigo
+    ) {
       setErroSolicitacao(
         'Preencha todos os campos obrigatórios antes de continuar.'
       )
@@ -204,6 +363,7 @@ function Visitante() {
 
     const dadosSolicitacao = {
       codigo_publico: codigo,
+      tipo_pessoa: tipoPessoa,
       nome,
       cpf: cpf.replace(/\D/g, ''),
       apartamento_destino_id: apartamentoId,
@@ -213,19 +373,38 @@ function Visitante() {
     try {
       setEnviando(true)
 
-      const resposta = await api.post(
+      const resposta = await api.postPublic(
         '/visitantes/solicitacoes',
         dadosSolicitacao
+      )
+
+      const token = resposta?.token_acompanhamento
+
+      if (!token) {
+        throw new Error(
+          'A solicitação foi enviada, mas não foi possível gerar o link de acompanhamento. Entre em contato com o condomínio.'
+        )
+      }
+
+      const novoLink = `${window.location.origin}/visitante/${encodeURIComponent(codigo)}#token=${encodeURIComponent(token)}`
+
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#token=${encodeURIComponent(token)}`
       )
 
       formularioElemento.reset()
       setCpf('')
       setErroCpf('')
-
       setSucesso(
         resposta?.mensagem ||
           'Solicitação enviada com sucesso! Aguarde a aprovação do condomínio.'
       )
+
+      setLinkAcompanhamento(novoLink)
+      setTokenAcompanhamento(token)
+      setAcompanhamento(null)
     } catch (error) {
       setErroSolicitacao(
         error.message ||
@@ -235,6 +414,10 @@ function Visitante() {
       setEnviando(false)
     }
   }
+
+  const statusAcompanhamento = acompanhamento?.status
+  const codigoLiberacao = acompanhamento?.codigo_liberacao
+  const dataExpiracao = acompanhamento?.codigo_expira_em
 
   return (
     <main className="palmcondo-app visitante-page">
@@ -257,14 +440,21 @@ function Visitante() {
       <section className="visitante-container">
         <div className="visitante-heading">
           <span className="visitante-eyebrow">
-            SOLICITAÇÃO DE ENTRADA
+            {tokenAcompanhamento
+              ? 'ACOMPANHAMENTO DE SOLICITAÇÃO'
+              : 'SOLICITAÇÃO DE ENTRADA'}
           </span>
 
-          <h1>Solicitação de acesso</h1>
+          <h1>
+            {tokenAcompanhamento
+              ? 'Acompanhe sua solicitação'
+              : 'Solicitação de acesso'}
+          </h1>
 
           <p>
-            Informe seus dados para solicitar sua entrada
-            no condomínio.
+            {tokenAcompanhamento
+              ? 'Consulte a situação da sua solicitação de acesso ao condomínio.'
+              : 'Informe seus dados para solicitar sua entrada no condomínio.'}
           </p>
         </div>
 
@@ -285,18 +475,21 @@ function Visitante() {
             </div>
           )}
 
-          {!erro && !carregando && apartamentos.length === 0 && (
-            <div className="alert alert-warning" role="alert">
-              Não existem apartamentos disponíveis para solicitação de acesso.
-            </div>
-          )}
+          {!tokenAcompanhamento &&
+            !erro &&
+            !carregando &&
+            apartamentos.length === 0 && (
+              <div className="alert alert-warning" role="alert">
+                Não existem apartamentos disponíveis para solicitação de acesso.
+              </div>
+            )}
 
           {sucesso && (
             <div className="alert alert-success" role="status">
               <strong>Solicitação registrada!</strong>
               <p className="mb-0 mt-1">{sucesso}</p>
               <p className="mb-0 mt-2">
-                Sua solicitação está pendente de aprovação pelo condomínio.
+                Guarde o link privado abaixo para acompanhar sua solicitação.
               </p>
             </div>
           )}
@@ -307,19 +500,258 @@ function Visitante() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="apartamento" className="form-label">
-                Apartamento
-              </label>
+          {tokenAcompanhamento ? (
+            <div className="acompanhamento-solicitacao">
+              {carregandoAcompanhamento && !acompanhamento && (
+                <div className="alert alert-info" role="status">
+                  Consultando sua solicitação...
+                </div>
+              )}
 
-              <select
-                id="apartamento"
-                name="apartamento"
-                className="form-select"
-                defaultValue=""
-                required
-                onChange={limparMensagemSucesso}
+              {erroAcompanhamento && (
+                <div className="alert alert-danger" role="alert">
+                  {erroAcompanhamento}
+                </div>
+              )}
+
+              {acompanhamento && (
+                <div className="alert alert-info" role="status">
+                  <strong>Situação da solicitação</strong>
+
+                  <p className="mb-0 mt-2">
+                    {obterDescricaoStatus(statusAcompanhamento)}
+                  </p>
+
+                  {acompanhamento.nome && (
+                    <p className="mb-0 mt-2">
+                      <strong>Solicitante:</strong> {acompanhamento.nome}
+                    </p>
+                  )}
+
+                  {acompanhamento.tipo_pessoa && (
+                    <p className="mb-0 mt-1">
+                      <strong>Tipo:</strong>{' '}
+                      {acompanhamento.tipo_pessoa === 'PRESTADOR'
+                        ? 'Prestador de serviço'
+                        : 'Visitante'}
+                    </p>
+                  )}
+
+                  {acompanhamento.apartamento && (
+                    <p className="mb-0 mt-1">
+                      <strong>Apartamento:</strong>{' '}
+                      {acompanhamento.apartamento.bloco
+                        ? `Bloco ${acompanhamento.apartamento.bloco} - `
+                        : ''}
+                      {acompanhamento.apartamento.numero}
+                    </p>
+                  )}
+
+                  {acompanhamento.mensagem && (
+                    <p className="mb-0 mt-1">
+                      <strong>Mensagem:</strong> {acompanhamento.mensagem}
+                    </p>
+                  )}
+
+                  {acompanhamento.data_hora_solicitacao && (
+                    <p className="mb-0 mt-1">
+                      <strong>Solicitação enviada:</strong>{' '}
+                      {formatarData(acompanhamento.data_hora_solicitacao)}
+                    </p>
+                  )}
+
+                  {statusAcompanhamento === 'AUTORIZADA' &&
+                    codigoLiberacao && (
+                      <div className="mt-3 p-3 bg-white rounded">
+                        <strong>Código de liberação</strong>
+
+                        <div className="fs-2 fw-bold text-center my-2">
+                          {codigoLiberacao}
+                        </div>
+
+                        <p className="mb-0">
+                          Apresente este código ao responsável pela liberação
+                          da entrada.
+                        </p>
+
+                        <p className="mb-0 mt-2">
+                          <strong>Válido até:</strong>{' '}
+                          {formatarData(dataExpiracao)}
+                        </p>
+                      </div>
+                    )}
+
+                  {statusAcompanhamento === 'AUTORIZADA' &&
+                    !codigoLiberacao && (
+                      <p className="mb-0 mt-2">
+                        A solicitação foi aprovada, mas o código de liberação
+                        não está disponível ou já expirou.
+                      </p>
+                    )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="visitante-button mt-3"
+                onClick={atualizarAcompanhamento}
+                disabled={carregandoAcompanhamento}
+              >
+                {carregandoAcompanhamento
+                  ? 'Atualizando...'
+                  : 'Atualizar situação'}
+              </button>
+
+              {linkAcompanhamento && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary w-100"
+                    onClick={copiarLinkAcompanhamento}
+                  >
+                    {copiado ? 'Link copiado!' : 'Copiar link de acompanhamento'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label htmlFor="tipo_pessoa" className="form-label">
+                  Tipo de acesso
+                </label>
+
+                <select
+                  id="tipo_pessoa"
+                  name="tipo_pessoa"
+                  className="form-select"
+                  defaultValue=""
+                  required
+                  onChange={limparMensagemSucesso}
+                  disabled={enviando}
+                >
+                  <option value="" disabled>
+                    Selecione uma opção
+                  </option>
+
+                  <option value="VISITANTE">
+                    Visitante
+                  </option>
+
+                  <option value="PRESTADOR">
+                    Prestador de serviço
+                  </option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="apartamento" className="form-label">
+                  Apartamento
+                </label>
+
+                <select
+                  id="apartamento"
+                  name="apartamento"
+                  className="form-select"
+                  defaultValue=""
+                  required
+                  onChange={limparMensagemSucesso}
+                  disabled={
+                    carregando ||
+                    Boolean(erro) ||
+                    apartamentos.length === 0 ||
+                    enviando
+                  }
+                >
+                  <option value="" disabled>
+                    {carregando
+                      ? 'Carregando apartamentos...'
+                      : 'Selecione o apartamento'}
+                  </option>
+
+                  {apartamentos.map((apartamento) => (
+                    <option key={apartamento.id} value={apartamento.id}>
+                      {apartamento.bloco
+                        ? `Bloco ${apartamento.bloco} - `
+                        : ''}
+                      Apto {apartamento.numero}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="nome" className="form-label">
+                  Nome completo
+                </label>
+
+                <input
+                  type="text"
+                  id="nome"
+                  name="nome"
+                  className="form-control"
+                  placeholder="Digite seu nome completo"
+                  autoComplete="name"
+                  maxLength={150}
+                  required
+                  onChange={limparMensagemSucesso}
+                  disabled={enviando}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="cpf" className="form-label">
+                  CPF
+                </label>
+
+                <input
+                  type="text"
+                  id="cpf"
+                  name="cpf"
+                  className={`form-control ${erroCpf ? 'is-invalid' : ''}`}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={14}
+                  value={formatarCPF(cpf)}
+                  onChange={handleCPFChange}
+                  aria-invalid={Boolean(erroCpf)}
+                  aria-describedby="cpf-feedback"
+                  required
+                  disabled={enviando}
+                />
+
+                {erroCpf && (
+                  <div id="cpf-feedback" className="invalid-feedback">
+                    {erroCpf}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="mensagem" className="form-label">
+                  Mensagem (opcional)
+                </label>
+
+                <textarea
+                  id="mensagem"
+                  name="mensagem"
+                  className="form-control"
+                  rows="3"
+                  maxLength={100}
+                  placeholder="Digite uma mensagem (até 100 caracteres)"
+                  onChange={limparMensagemSucesso}
+                  disabled={enviando}
+                />
+
+                <div className="form-text">
+                  Máximo de 100 caracteres.
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="visitante-button"
                 disabled={
                   carregando ||
                   Boolean(erro) ||
@@ -327,105 +759,10 @@ function Visitante() {
                   enviando
                 }
               >
-                <option value="" disabled>
-                  {carregando
-                    ? 'Carregando apartamentos...'
-                    : 'Selecione o apartamento'}
-                </option>
-
-                {apartamentos.map((apartamento) => (
-                  <option key={apartamento.id} value={apartamento.id}>
-                    {apartamento.bloco
-                      ? `Bloco ${apartamento.bloco} - `
-                      : ''}
-                    Apto {apartamento.numero}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="nome" className="form-label">
-                Nome completo
-              </label>
-
-              <input
-                type="text"
-                id="nome"
-                name="nome"
-                className="form-control"
-                placeholder="Digite seu nome completo"
-                autoComplete="name"
-                maxLength={150}
-                required
-                onChange={limparMensagemSucesso}
-                disabled={enviando}
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="cpf" className="form-label">
-                CPF
-              </label>
-
-              <input
-                type="text"
-                id="cpf"
-                name="cpf"
-                className={`form-control ${erroCpf ? 'is-invalid' : ''}`}
-                placeholder="000.000.000-00"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={14}
-                value={formatarCPF(cpf)}
-                onChange={handleCPFChange}
-                aria-invalid={Boolean(erroCpf)}
-                aria-describedby="cpf-feedback"
-                required
-                disabled={enviando}
-              />
-
-              {erroCpf && (
-                <div id="cpf-feedback" className="invalid-feedback">
-                  {erroCpf}
-                </div>
-              )}
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="mensagem" className="form-label">
-                Mensagem (opcional)
-              </label>
-
-              <textarea
-                id="mensagem"
-                name="mensagem"
-                className="form-control"
-                rows="3"
-                maxLength={100}
-                placeholder="Digite uma mensagem (até 100 caracteres)"
-                onChange={limparMensagemSucesso}
-                disabled={enviando}
-              />
-
-              <div className="form-text">
-                Máximo de 100 caracteres.
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="visitante-button"
-              disabled={
-                carregando ||
-                Boolean(erro) ||
-                apartamentos.length === 0 ||
-                enviando
-              }
-            >
-              {enviando ? 'Enviando solicitação...' : 'Enviar solicitação'}
-            </button>
-          </form>
+                {enviando ? 'Enviando solicitação...' : 'Enviar solicitação'}
+              </button>
+            </form>
+          )}
         </div>
       </section>
 

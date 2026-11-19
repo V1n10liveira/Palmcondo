@@ -1,7 +1,19 @@
 
 const prisma = require('../lib/prisma');
 
+const {
+    gerarTokenAcompanhamento,
+    gerarHashToken,
+    gerarCodigoLiberacao,
+    gerarHashCodigo,
+    criptografarCodigo,
+    descriptografarCodigo
+} = require('../utils/solicitacao-seguranca');
+
 const TEMPO_AUTORIZACAO_HORAS = 24;
+const TEMPO_AUTORIZACAO_MS = TEMPO_AUTORIZACAO_HORAS * 60 * 60 * 1000;
+
+const TIPOS_PESSOA_PERMITIDOS = ['VISITANTE', 'PRESTADOR'];
 
 // Valida matematicamente os dígitos verificadores do CPF.
 function validarCPF(cpf) {
@@ -59,11 +71,87 @@ function converterId(valor) {
     }
 }
 
+// Calcula a data de expiração de uma autorização.
+function calcularExpiracao(dataAprovacao) {
+    return new Date(
+        new Date(dataAprovacao).getTime() + TEMPO_AUTORIZACAO_MS
+    );
+}
+
+// Recupera o código de liberação sem expor o conteúdo criptografado.
+function obterCodigoLiberacao(solicitacao) {
+    if (
+        solicitacao.status !== 'AUTORIZADA' ||
+        !solicitacao.codigo_liberacao_criptografado
+    ) {
+        return null;
+    }
+
+    const agora = new Date();
+
+    const dataExpiracao = solicitacao.codigo_expira_em
+        ? solicitacao.codigo_expira_em
+        : calcularExpiracao(solicitacao.data_hora_resposta);
+
+    if (!dataExpiracao || dataExpiracao <= agora) {
+        return null;
+    }
+
+    try {
+        return descriptografarCodigo(
+            solicitacao.codigo_liberacao_criptografado
+        );
+    } catch (error) {
+        console.error(
+            'ERRO AO DESCRIPTOGRAFAR CÓDIGO DE LIBERAÇÃO:',
+            error
+        );
+
+        return null;
+    }
+}
+
+// Expira autorizações vencidas de visitantes e prestadores.
+async function expirarSolicitacoesVencidas(filtros = {}) {
+    const agora = new Date();
+
+    const limiteExpiracao = new Date(
+        agora.getTime() - TEMPO_AUTORIZACAO_MS
+    );
+
+    return prisma.solicitacoes_acesso.updateMany({
+        where: {
+            ...filtros,
+            tipo_pessoa: {
+                in: TIPOS_PESSOA_PERMITIDOS
+            },
+            status: 'AUTORIZADA',
+            OR: [
+                {
+                    codigo_expira_em: {
+                        lte: agora
+                    }
+                },
+                {
+                    codigo_expira_em: null,
+                    data_hora_resposta: {
+                        lte: limiteExpiracao
+                    }
+                }
+            ]
+        },
+        data: {
+            status: 'EXPIRADA'
+        }
+    });
+}
+
 // CRIAR SOLICITAÇÃO PÚBLICA DE ACESSO.
 async function criarSolicitacaoPublica(req, res) {
     try {
         const {
             codigo_publico,
+            tipo_pessoa,
             nome,
             cpf,
             apartamento_destino_id,
@@ -72,16 +160,21 @@ async function criarSolicitacaoPublica(req, res) {
 
         if (
             !codigo_publico ||
+            !tipo_pessoa ||
             !nome ||
             !cpf ||
             !apartamento_destino_id
         ) {
             return res.status(400).json({
-                erro: 'Código do condomínio, nome, CPF e apartamento são obrigatórios.'
+                erro: 'Código do condomínio, tipo de acesso, nome, CPF e apartamento são obrigatórios.'
             });
         }
 
         const codigoLimpo = String(codigo_publico)
+            .trim()
+            .toUpperCase();
+
+        const tipoPessoaLimpo = String(tipo_pessoa)
             .trim()
             .toUpperCase();
 
@@ -99,6 +192,12 @@ async function criarSolicitacaoPublica(req, res) {
         if (!codigoLimpo || codigoLimpo.length > 64) {
             return res.status(400).json({
                 erro: 'Código público do condomínio inválido.'
+            });
+        }
+
+        if (!TIPOS_PESSOA_PERMITIDOS.includes(tipoPessoaLimpo)) {
+            return res.status(400).json({
+                erro: 'Tipo de acesso inválido. Utilize VISITANTE ou PRESTADOR.'
             });
         }
 
@@ -172,14 +271,20 @@ async function criarSolicitacaoPublica(req, res) {
             });
         }
 
+        // O token original será entregue uma única vez.
+        // Somente seu hash será armazenado no banco.
+        const tokenAcompanhamento = gerarTokenAcompanhamento();
+        const tokenHash = gerarHashToken(tokenAcompanhamento);
+
         const solicitacao = await prisma.solicitacoes_acesso.create({
             data: {
                 condominio_id: condominio.id,
                 nome: nomeLimpo,
                 cpf: cpfLimpo,
-                tipo_pessoa: 'VISITANTE',
+                tipo_pessoa: tipoPessoaLimpo,
                 apartamento_destino_id: apartamento.id,
                 mensagem: mensagemLimpa,
+                token_acompanhamento_hash: tokenHash,
                 status: 'PENDENTE'
             },
             select: {
@@ -195,6 +300,7 @@ async function criarSolicitacaoPublica(req, res) {
 
         return res.status(201).json({
             mensagem: 'Solicitação de acesso enviada com sucesso.',
+            token_acompanhamento: tokenAcompanhamento,
             solicitacao: {
                 id: String(solicitacao.id),
                 nome: solicitacao.nome,
@@ -215,6 +321,101 @@ async function criarSolicitacaoPublica(req, res) {
 
         return res.status(500).json({
             erro: 'Erro ao registrar solicitação de acesso.'
+        });
+    }
+}
+
+// CONSULTAR SOLICITAÇÃO PÚBLICA PELO TOKEN PRIVADO.
+async function consultarSolicitacaoPublica(req, res) {
+    try {
+        const token = String(req.params.token || '');
+
+        if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+            return res.status(404).json({
+                erro: 'Solicitação não encontrada.'
+            });
+        }
+
+        const tokenHash = gerarHashToken(token);
+
+        const solicitacao = await prisma.solicitacoes_acesso.findUnique({
+            where: {
+                token_acompanhamento_hash: tokenHash
+            },
+            select: {
+                id: true,
+                nome: true,
+                tipo_pessoa: true,
+                status: true,
+                mensagem: true,
+                data_hora_solicitacao: true,
+                data_hora_resposta: true,
+                codigo_expira_em: true,
+                codigo_liberacao_criptografado: true,
+                apartamentos: {
+                    select: {
+                        bloco: true,
+                        numero: true
+                    }
+                }
+            }
+        });
+
+        if (!solicitacao) {
+            return res.status(404).json({
+                erro: 'Solicitação não encontrada.'
+            });
+        }
+
+        // Atualiza o status caso a autorização tenha vencido.
+        if (solicitacao.status === 'AUTORIZADA') {
+            const dataExpiracao = solicitacao.codigo_expira_em
+                ? solicitacao.codigo_expira_em
+                : calcularExpiracao(solicitacao.data_hora_resposta);
+
+            if (!dataExpiracao || dataExpiracao <= new Date()) {
+                await prisma.solicitacoes_acesso.updateMany({
+                    where: {
+                        id: solicitacao.id,
+                        status: 'AUTORIZADA'
+                    },
+                    data: {
+                        status: 'EXPIRADA'
+                    }
+                });
+
+                solicitacao.status = 'EXPIRADA';
+            }
+        }
+
+        const codigoLiberacao = obterCodigoLiberacao(solicitacao);
+
+        return res.status(200).json({
+            solicitacao: {
+                nome: solicitacao.nome,
+                tipo_pessoa: solicitacao.tipo_pessoa,
+                status: solicitacao.status,
+                mensagem: solicitacao.mensagem,
+                data_hora_solicitacao: solicitacao.data_hora_solicitacao,
+                data_hora_resposta: solicitacao.data_hora_resposta,
+                codigo_liberacao: codigoLiberacao,
+                codigo_expira_em: codigoLiberacao
+                    ? solicitacao.codigo_expira_em || calcularExpiracao(solicitacao.data_hora_resposta)
+                    : null,
+                apartamento: solicitacao.apartamentos
+                    ? {
+                        bloco: solicitacao.apartamentos.bloco,
+                        numero: solicitacao.apartamentos.numero
+                    }
+                    : null
+            }
+        });
+
+    } catch (error) {
+        console.error('ERRO AO CONSULTAR SOLICITAÇÃO PÚBLICA:', error);
+
+        return res.status(500).json({
+            erro: 'Erro ao consultar solicitação de acesso.'
         });
     }
 }
@@ -265,31 +466,16 @@ async function listarSolicitacoesMorador(req, res) {
             });
         }
 
-        // Calcula o limite de 24 horas a partir da aprovação.
-        const limiteExpiracao = new Date(
-            Date.now() - TEMPO_AUTORIZACAO_HORAS * 60 * 60 * 1000
-        );
-
-        // Atualiza somente autorizações de visitantes vencidas.
-        await prisma.solicitacoes_acesso.updateMany({
-            where: {
-                tipo_pessoa: 'VISITANTE',
-                condominio_id: condominioId,
-                apartamento_destino_id: morador.apartamento_id,
-                status: 'AUTORIZADA',
-                data_hora_resposta: {
-                    lte: limiteExpiracao
-                }
-            },
-            data: {
-                status: 'EXPIRADA'
-            }
+        await expirarSolicitacoesVencidas({
+            condominio_id: condominioId,
+            apartamento_destino_id: morador.apartamento_id
         });
 
-        // Retorna somente solicitações de visitantes do apartamento.
         const solicitacoes = await prisma.solicitacoes_acesso.findMany({
             where: {
-                tipo_pessoa: 'VISITANTE',
+                tipo_pessoa: {
+                    in: TIPOS_PESSOA_PERMITIDOS
+                },
                 condominio_id: condominioId,
                 apartamento_destino_id: morador.apartamento_id,
                 status: {
@@ -329,6 +515,10 @@ async function listarSolicitacoesMorador(req, res) {
                 data_hora_resposta: solicitacao.data_hora_resposta,
                 validade_horas: solicitacao.status === 'AUTORIZADA'
                     ? TEMPO_AUTORIZACAO_HORAS
+                    : null,
+                codigo_liberacao: obterCodigoLiberacao(solicitacao),
+                codigo_expira_em: obterCodigoLiberacao(solicitacao)
+                    ? solicitacao.codigo_expira_em || calcularExpiracao(solicitacao.data_hora_resposta)
                     : null,
                 apartamento: solicitacao.apartamentos
                     ? {
@@ -427,21 +617,74 @@ async function responderSolicitacaoMorador(req, res) {
             });
         }
 
-        const atualizacao = await prisma.solicitacoes_acesso.updateMany({
-            where: {
-                id: solicitacaoId,
-                condominio_id: condominioId,
-                apartamento_destino_id: morador.apartamento_id,
-                status: 'PENDENTE'
-            },
-            data: {
-                status,
-                respondido_por: usuarioId,
-                data_hora_resposta: new Date()
-            }
-        });
+        const dataHoraResposta = new Date();
 
-        if (atualizacao.count === 0) {
+        let codigoLiberacao = null;
+        let atualizacao = null;
+
+        // Na aprovação, gera código e tenta gravá-lo.
+        // Se houver colisão no índice único, gera outro código.
+        if (status === 'AUTORIZADA') {
+            const codigoExpiraEm = calcularExpiracao(dataHoraResposta);
+
+            for (let tentativa = 0; tentativa < 5; tentativa++) {
+                const codigo = gerarCodigoLiberacao();
+                const codigoHash = gerarHashCodigo(codigo);
+                const codigoCriptografado = criptografarCodigo(codigo);
+
+                try {
+                    atualizacao = await prisma.solicitacoes_acesso.updateMany({
+                        where: {
+                            id: solicitacaoId,
+                            condominio_id: condominioId,
+                            apartamento_destino_id: morador.apartamento_id,
+                            status: 'PENDENTE'
+                        },
+                        data: {
+                            status,
+                            respondido_por: usuarioId,
+                            data_hora_resposta: dataHoraResposta,
+                            codigo_liberacao_hash: codigoHash,
+                            codigo_liberacao_criptografado: codigoCriptografado,
+                            codigo_expira_em: codigoExpiraEm
+                        }
+                    });
+
+                    if (atualizacao.count > 0) {
+                        codigoLiberacao = codigo;
+                    }
+
+                    break;
+
+                } catch (error) {
+                    if (
+                        error.code === 'P2002' &&
+                        tentativa < 4
+                    ) {
+                        continue;
+                    }
+
+                    throw error;
+                }
+            }
+
+        } else {
+            atualizacao = await prisma.solicitacoes_acesso.updateMany({
+                where: {
+                    id: solicitacaoId,
+                    condominio_id: condominioId,
+                    apartamento_destino_id: morador.apartamento_id,
+                    status: 'PENDENTE'
+                },
+                data: {
+                    status,
+                    respondido_por: usuarioId,
+                    data_hora_resposta: dataHoraResposta
+                }
+            });
+        }
+
+        if (!atualizacao || atualizacao.count === 0) {
             return res.status(409).json({
                 erro: 'Esta solicitação já foi respondida por outro morador.'
             });
@@ -459,6 +702,7 @@ async function responderSolicitacaoMorador(req, res) {
                 respondido_por: true,
                 data_hora_solicitacao: true,
                 data_hora_resposta: true,
+                codigo_expira_em: true,
                 apartamentos: {
                     select: {
                         bloco: true,
@@ -483,6 +727,10 @@ async function responderSolicitacaoMorador(req, res) {
                 validade_horas: status === 'AUTORIZADA'
                     ? TEMPO_AUTORIZACAO_HORAS
                     : null,
+                codigo_liberacao: codigoLiberacao,
+                codigo_expira_em: codigoLiberacao
+                    ? solicitacaoAtualizada.codigo_expira_em
+                    : null,
                 apartamento: solicitacaoAtualizada.apartamentos
                     ? {
                         bloco: solicitacaoAtualizada.apartamentos.bloco,
@@ -503,6 +751,7 @@ async function responderSolicitacaoMorador(req, res) {
 
 module.exports = {
     criarSolicitacaoPublica,
+    consultarSolicitacaoPublica,
     listarSolicitacoesMorador,
     responderSolicitacaoMorador
 };

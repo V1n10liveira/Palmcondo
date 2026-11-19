@@ -33,13 +33,13 @@ function limparSessao() {
   sessionStorage.removeItem(USUARIO_KEY)
 }
 
-async function requisicao(endpoint, options = {}) {
+async function requisicao(endpoint, options = {}, autenticar = true) {
   if (!API_URL) {
     throw new Error('A URL da API não está configurada.')
   }
 
   try {
-    const token = obterToken()
+    const token = autenticar ? obterToken() : null
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
@@ -84,6 +84,7 @@ async function requisicao(endpoint, options = {}) {
 }
 
 export const api = {
+  // Requisições autenticadas.
   get(endpoint) {
     return requisicao(endpoint)
   },
@@ -101,6 +102,7 @@ export const api = {
       body: JSON.stringify(dados),
     })
   },
+
   patch(endpoint, dados) {
     return requisicao(endpoint, {
       method: 'PATCH',
@@ -112,6 +114,22 @@ export const api = {
     return requisicao(endpoint, {
       method: 'DELETE',
     })
+  },
+
+  // Requisições públicas, sem enviar o JWT da sessão.
+  getPublic(endpoint) {
+    return requisicao(endpoint, {}, false)
+  },
+
+  postPublic(endpoint, dados) {
+    return requisicao(
+      endpoint,
+      {
+        method: 'POST',
+        body: JSON.stringify(dados),
+      },
+      false
+    )
   },
 
   salvarSessao,

@@ -9,6 +9,7 @@ const {
 
 const {
     criarSolicitacaoPublica,
+    consultarSolicitacaoPublica,
     listarSolicitacoesMorador,
     responderSolicitacaoMorador
 } = require('../controllers/solicitacoes.controller');
@@ -20,7 +21,13 @@ const router = express.Router();
 // Solicitação pública de acesso por visitante.
 router.post('/solicitacoes', criarSolicitacaoPublica);
 
-// Lista solicitações pendentes do morador autenticado.
+// Consulta pública de solicitação pelo token privado.
+router.get(
+    '/solicitacoes/publica/:token',
+    consultarSolicitacaoPublica
+);
+
+// Lista solicitações do morador autenticado.
 router.get(
     '/solicitacoes',
     authMiddleware,

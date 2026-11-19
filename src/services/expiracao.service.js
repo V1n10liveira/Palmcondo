@@ -1,22 +1,40 @@
+
 const prisma = require('../lib/prisma');
 
 const TEMPO_AUTORIZACAO_HORAS = 24;
+const TEMPO_AUTORIZACAO_MS = TEMPO_AUTORIZACAO_HORAS * 60 * 60 * 1000;
 const INTERVALO_VERIFICACAO_MS = 60 * 1000;
 
-// Expira autorizações de visitantes cujo prazo de 24 horas terminou.
+const TIPOS_PESSOA_PERMITIDOS = ['VISITANTE', 'PRESTADOR'];
+
+// Expira autorizações vencidas de visitantes e prestadores.
 async function expirarAutorizacoesVencidas() {
     try {
+        const agora = new Date();
+
         const limiteExpiracao = new Date(
-            Date.now() - TEMPO_AUTORIZACAO_HORAS * 60 * 60 * 1000
+            agora.getTime() - TEMPO_AUTORIZACAO_MS
         );
 
         const resultado = await prisma.solicitacoes_acesso.updateMany({
             where: {
-                tipo_pessoa: 'VISITANTE',
+                tipo_pessoa: {
+                    in: TIPOS_PESSOA_PERMITIDOS
+                },
                 status: 'AUTORIZADA',
-                data_hora_resposta: {
-                    lte: limiteExpiracao
-                }
+                OR: [
+                    {
+                        codigo_expira_em: {
+                            lte: agora
+                        }
+                    },
+                    {
+                        codigo_expira_em: null,
+                        data_hora_resposta: {
+                            lte: limiteExpiracao
+                        }
+                    }
+                ]
             },
             data: {
                 status: 'EXPIRADA'

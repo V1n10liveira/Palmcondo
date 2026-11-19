@@ -131,23 +131,23 @@ model condominios {
   cnpj                String?               @unique(map: "uk_condominios_cnpj") @db.VarChar(18)
   endereco            String                @db.VarChar(200)
   numero              String?               @db.VarChar(20)
-  complemento         String?               @db.VarChar(100)
-  bairro              String?               @db.VarChar(100)
-  cidade              String                @db.VarChar(100)
-  estado              String                @db.Char(2)
-  cep                 String?               @db.VarChar(9)
-  telefone            String?               @db.VarChar(20)
-  email               String?               @db.VarChar(150)
-  ativo               Boolean               @default(true)
-  created_at          DateTime              @default(now()) @db.Timestamp(0)
-  updated_at          DateTime              @default(now()) @db.Timestamp(0)
-  acessos             acessos[]
-  apartamentos        apartamentos[]
-  autorizacoes        autorizacoes[]
-  pessoas             pessoas[]
-  portoes             portoes[]
-  solicitacoes_acesso solicitacoes_acesso[]
-  usuarios            usuarios[]
+  complemento          String?               @db.VarChar(100)
+  bairro               String?               @db.VarChar(100)
+  cidade               String                @db.VarChar(100)
+  estado               String                @db.Char(2)
+  cep                  String?               @db.VarChar(9)
+  telefone             String?               @db.VarChar(20)
+  email                String?               @db.VarChar(150)
+  ativo                Boolean               @default(true)
+  created_at           DateTime              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime              @default(now()) @db.Timestamp(0)
+  acessos              acessos[]
+  apartamentos         apartamentos[]
+  autorizacoes         autorizacoes[]
+  pessoas              pessoas[]
+  portoes              portoes[]
+  solicitacoes_acesso  solicitacoes_acesso[]
+  usuarios             usuarios[]
 }
 
 model logs_sistema {
@@ -282,23 +282,27 @@ model recuperacao_senha {
 }
 
 model solicitacoes_acesso {
-  id                     BigInt                          @id @default(autoincrement()) @db.UnsignedBigInt
-  condominio_id          BigInt                          @db.UnsignedBigInt
-  nome                   String                          @db.VarChar(150)
-  mensagem               String?                         @db.VarChar(100)
-  cpf                    String                          @db.VarChar(14)
-  tipo_pessoa            solicitacoes_acesso_tipo_pessoa
-  apartamento_destino_id BigInt?                         @db.UnsignedBigInt
-  data_hora_solicitacao  DateTime                        @default(now()) @db.DateTime(0)
-  status                 solicitacoes_acesso_status      @default(PENDENTE)
-  data_hora_resposta     DateTime?                       @db.DateTime(0)
-  respondido_por         BigInt?                         @db.UnsignedBigInt
-  observacao             String?                         @db.Text
-  created_at             DateTime                        @default(now()) @db.Timestamp(0)
-  acessos                acessos[]
-  apartamentos           apartamentos?                   @relation(fields: [apartamento_destino_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_apartamento")
-  condominios            condominios                     @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_condominio")
-  usuarios               usuarios?                       @relation(fields: [respondido_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_respondido_por")
+  id                               BigInt                          @id @default(autoincrement()) @db.UnsignedBigInt
+  condominio_id                    BigInt                          @db.UnsignedBigInt
+  nome                             String                          @db.VarChar(150)
+  mensagem                         String?                         @db.VarChar(100)
+  cpf                              String                          @db.VarChar(14)
+  tipo_pessoa                      solicitacoes_acesso_tipo_pessoa
+  apartamento_destino_id           BigInt?                         @db.UnsignedBigInt
+  data_hora_solicitacao            DateTime                        @default(now()) @db.DateTime(0)
+  status                           solicitacoes_acesso_status      @default(PENDENTE)
+  data_hora_resposta               DateTime?                       @db.DateTime(0)
+  respondido_por                   BigInt?                         @db.UnsignedBigInt
+  observacao                       String?                         @db.Text
+  token_acompanhamento_hash        String?                         @unique(map: "uk_solicitacoes_token_hash") @db.Char(64)
+  codigo_liberacao_criptografado   String?                         @db.VarChar(255)
+  codigo_liberacao_hash            String?                         @unique(map: "uk_solicitacoes_codigo_hash") @db.Char(64)
+  codigo_expira_em                 DateTime?                       @db.DateTime(0)
+  created_at                       DateTime                        @default(now()) @db.Timestamp(0)
+  acessos                          acessos[]
+  apartamentos                     apartamentos?                   @relation(fields: [apartamento_destino_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_apartamento")
+  condominios                      condominios                     @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_condominio")
+  usuarios                         usuarios?                       @relation(fields: [respondido_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_solicitacoes_respondido_por")
 
   @@index([apartamento_destino_id], map: "fk_solicitacoes_apartamento")
   @@index([condominio_id], map: "fk_solicitacoes_condominio")
@@ -321,14 +325,14 @@ model usuarios {
   created_at          DateTime              @default(now()) @db.Timestamp(0)
   updated_at          DateTime              @default(now()) @db.Timestamp(0)
   aberturas_portao    aberturas_portao[]
-  autorizacoes        autorizacoes[]
-  colaboradores       colaboradores?
-  logs_sistema        logs_sistema[]
-  moradores           moradores?
-  notificacoes        notificacoes[]
-  recuperacao_senha   recuperacao_senha[]
+  autorizacoes       autorizacoes[]
+  colaboradores      colaboradores?
+  logs_sistema       logs_sistema[]
+  moradores          moradores?
+  notificacoes       notificacoes[]
+  recuperacao_senha  recuperacao_senha[]
   solicitacoes_acesso solicitacoes_acesso[]
-  condominios         condominios           @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuarios_condominio")
+  condominios        condominios           @relation(fields: [condominio_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuarios_condominio")
 
   @@index([condominio_id], map: "idx_usuarios_condominio")
   @@index([tipo_usuario], map: "idx_usuarios_tipo")
