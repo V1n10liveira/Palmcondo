@@ -28,12 +28,6 @@ const secoes = [
     nome: 'Histórico',
     icone: '◷',
     descricao: 'Consulte o histórico disponível de solicitações.'
-  },
-  {
-    id: 'perfil',
-    nome: 'Meu perfil',
-    icone: '◎',
-    descricao: 'Consulte seus dados cadastrais.'
   }
 ]
 
@@ -698,8 +692,24 @@ function Morador() {
   return (
     <main className="morador-layout">
       <aside className="morador-sidebar">
-        <a href="/" className="morador-brand">
-          Palm<span>Condo</span>
+        <a href="/" className="morador-brand" aria-label="PalmCondo - início">
+          <span className="morador-brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect
+                x="4" y="10" width="16" height="11" rx="2"
+                stroke="currentColor" strokeWidth="2"
+              />
+              <path
+                d="M8 10V7a4 4 0 0 1 8 0v3"
+                stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+
+          <span>
+            Palm<span>Condo</span>
+          </span>
         </a>
 
         <div className="morador-sidebar-label">
@@ -724,28 +734,6 @@ function Morador() {
             </button>
           ))}
         </nav>
-
-        <div className="morador-sidebar-footer">
-          <div className="morador-user-info">
-            <div className="morador-avatar">
-              {(usuario?.nome || 'M').charAt(0).toUpperCase()}
-            </div>
-
-            <div className="morador-user-text">
-              <strong>{usuario?.nome || 'Morador'}</strong>
-              <span>Morador</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="morador-logout"
-            onClick={handleLogout}
-          >
-            <span>↪</span>
-            Sair da conta
-          </button>
-        </div>
       </aside>
 
       <section className="morador-main">
@@ -763,7 +751,46 @@ function Morador() {
               {(usuario?.nome || 'M').charAt(0).toUpperCase()}
             </div>
 
-            <span>{usuario?.nome || 'Morador'}</span>
+            <span className="morador-topbar-user-name">
+              {usuario?.nome || 'Morador'}
+            </span>
+
+            <button
+              type="button"
+              className="morador-topbar-logout"
+              onClick={handleLogout}
+              aria-label="Sair da conta"
+              title="Sair da conta"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 17l5-5-5-5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M15 12H3"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M12 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              <span>Sair</span>
+            </button>
           </div>
         </header>
 
@@ -852,4 +879,3 @@ function Morador() {
 }
 
 export default Morador
-
