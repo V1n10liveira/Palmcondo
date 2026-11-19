@@ -18,22 +18,16 @@ const secoes = [
     descricao: 'Consulte e acompanhe suas autorizações de acesso.'
   },
   {
-    id: 'visitantes',
-    nome: 'Visitantes',
+    id: 'solicitacoes',
+    nome: 'Solicitações de acesso',
     icone: '♙',
-    descricao: 'Gerencie as solicitações e autorizações de visitantes.'
-  },
-  {
-    id: 'prestadores',
-    nome: 'Prestadores',
-    icone: '⚒',
-    descricao: 'Consulte e gerencie seus prestadores de serviço.'
+    descricao: 'Gerencie solicitações de visitantes e prestadores.'
   },
   {
     id: 'historico',
-    nome: 'Histórico de acessos',
+    nome: 'Histórico',
     icone: '◷',
-    descricao: 'Acompanhe o histórico de entradas e saídas.'
+    descricao: 'Consulte o histórico disponível de solicitações.'
   },
   {
     id: 'perfil',
@@ -44,53 +38,20 @@ const secoes = [
 ]
 
 const statusAutorizacao = {
-  PENDENTE: {
-    nome: 'Pendente',
-    classe: 'pendente'
-  },
-  ATIVA: {
-    nome: 'Ativa',
-    classe: 'ativa'
-  },
-  UTILIZADA: {
-    nome: 'Utilizada',
-    classe: 'utilizada'
-  },
-  EXPIRADA: {
-    nome: 'Expirada',
-    classe: 'expirada'
-  },
-  CANCELADA: {
-    nome: 'Cancelada',
-    classe: 'cancelada'
-  },
-  BLOQUEADA: {
-    nome: 'Bloqueada',
-    classe: 'bloqueada'
-  }
+  PENDENTE: { nome: 'Pendente', classe: 'pendente' },
+  ATIVA: { nome: 'Ativa', classe: 'ativa' },
+  UTILIZADA: { nome: 'Utilizada', classe: 'utilizada' },
+  EXPIRADA: { nome: 'Expirada', classe: 'expirada' },
+  CANCELADA: { nome: 'Cancelada', classe: 'cancelada' },
+  BLOQUEADA: { nome: 'Bloqueada', classe: 'bloqueada' }
 }
 
 const statusSolicitacao = {
-  PENDENTE: {
-    nome: 'Pendente',
-    classe: 'pendente'
-  },
-  AUTORIZADA: {
-    nome: 'Autorizada',
-    classe: 'ativa'
-  },
-  EXPIRADA: {
-    nome: 'Expirada',
-    classe: 'expirada'
-  },
-  NEGADA: {
-    nome: 'Recusada',
-    classe: 'recusada'
-  },
-  CANCELADA: {
-    nome: 'Cancelada',
-    classe: 'cancelada'
-  }
+  PENDENTE: { nome: 'Pendente', classe: 'pendente' },
+  AUTORIZADA: { nome: 'Autorizada', classe: 'ativa' },
+  EXPIRADA: { nome: 'Expirada', classe: 'expirada' },
+  NEGADA: { nome: 'Recusada', classe: 'recusada' },
+  CANCELADA: { nome: 'Cancelada', classe: 'cancelada' }
 }
 
 function formatarData(data) {
@@ -136,7 +97,7 @@ function calcularExpiracao(dataAprovacao) {
 function formatarTipoPessoa(tipo) {
   const tipos = {
     VISITANTE: 'Visitante',
-    PRESTADOR: 'Prestador'
+    PRESTADOR: 'Prestador de serviço'
   }
 
   return tipos[tipo] || tipo || 'Não informado'
@@ -205,11 +166,16 @@ function Morador() {
   }, [])
 
   useEffect(() => {
+    if (secaoAtiva === 'inicio') {
+      carregarAutorizacoes()
+      carregarSolicitacoes()
+    }
+
     if (secaoAtiva === 'autorizacoes') {
       carregarAutorizacoes()
     }
 
-    if (secaoAtiva === 'visitantes') {
+    if (secaoAtiva === 'solicitacoes') {
       setMensagemSolicitacao('')
       carregarSolicitacoes()
     }
@@ -255,6 +221,7 @@ function Morador() {
       )
 
       await carregarSolicitacoes()
+      await carregarAutorizacoes()
     } catch (error) {
       setErroSolicitacoes(
         error.message || 'Não foi possível responder à solicitação.'
@@ -262,6 +229,91 @@ function Morador() {
     } finally {
       setSolicitacaoEmProcessamento(null)
     }
+  }
+
+  function renderizarIndicadores() {
+    const indicadores = [
+      {
+        titulo: 'Autorizações ativas',
+        valor: autorizacoes.filter(
+          (item) => item.status === 'ATIVA'
+        ).length,
+        carregando: carregandoAutorizacoes,
+        descricao: 'Autorizações disponíveis',
+        icone: '✓',
+        secao: 'autorizacoes'
+      },
+      {
+        titulo: 'Solicitações pendentes',
+        valor: solicitacoes.filter(
+          (item) => item.status === 'PENDENTE'
+        ).length,
+        carregando: carregandoSolicitacoes,
+        descricao: 'Aguardando sua aprovação',
+        icone: '♙',
+        secao: 'solicitacoes'
+      },
+      {
+        titulo: 'Solicitações aprovadas',
+        valor: solicitacoes.filter(
+          (item) => item.status === 'AUTORIZADA'
+        ).length,
+        carregando: carregandoSolicitacoes,
+        descricao: 'Acessos autorizados',
+        icone: '✓',
+        secao: 'solicitacoes'
+      },
+      {
+        titulo: 'Solicitações expiradas',
+        valor: solicitacoes.filter(
+          (item) => item.status === 'EXPIRADA'
+        ).length,
+        carregando: carregandoSolicitacoes,
+        descricao: 'Solicitações com prazo encerrado',
+        icone: '◷',
+        secao: 'solicitacoes'
+      }
+    ]
+
+    return (
+      <div className="morador-cards">
+        {indicadores.map((indicador) => (
+          <button
+            key={indicador.titulo}
+            type="button"
+            className="morador-card"
+            onClick={() => navegarPara(indicador.secao)}
+          >
+            <span className="morador-card-icon">
+              {indicador.icone}
+            </span>
+
+            <strong>{indicador.titulo}</strong>
+
+            <span
+              style={{
+                display: 'block',
+                marginTop: '10px',
+                color: '#171717',
+                fontSize: '28px',
+                fontWeight: 850,
+                lineHeight: 1.2
+              }}
+            >
+              {indicador.carregando ? '...' : indicador.valor}
+            </span>
+
+            <span className="morador-card-description">
+              {indicador.descricao}
+            </span>
+
+            <span className="morador-card-link">
+              Consultar →
+            </span>
+          </button>
+        ))}
+      </div>
+    )
   }
 
   function renderizarAutorizacoes() {
@@ -280,10 +332,7 @@ function Morador() {
           <h3>Não foi possível carregar os dados.</h3>
           <p>{erroAutorizacoes}</p>
 
-          <button
-            type="button"
-            onClick={carregarAutorizacoes}
-          >
+          <button type="button" onClick={carregarAutorizacoes}>
             Tentar novamente
           </button>
         </div>
@@ -300,10 +349,7 @@ function Morador() {
             elas aparecerão nesta área.
           </p>
 
-          <button
-            type="button"
-            onClick={carregarAutorizacoes}
-          >
+          <button type="button" onClick={carregarAutorizacoes}>
             Atualizar lista
           </button>
         </div>
@@ -421,6 +467,11 @@ function Morador() {
         ? calcularExpiracao(solicitacao.data_hora_resposta)
         : null
 
+    const tipoPessoaClasse =
+      solicitacao.tipo_pessoa === 'PRESTADOR'
+        ? 'morador-tipo-prestador'
+        : 'morador-tipo-visitante'
+
     return (
       <article
         className="morador-autorizacao-card"
@@ -428,7 +479,9 @@ function Morador() {
       >
         <div className="morador-autorizacao-header">
           <div>
-            <span className="morador-autorizacao-tipo">
+            <span
+              className={`morador-autorizacao-tipo ${tipoPessoaClasse}`}
+            >
               {formatarTipoPessoa(solicitacao.tipo_pessoa)}
             </span>
 
@@ -481,7 +534,7 @@ function Morador() {
 
           {solicitacao.mensagem && (
             <div>
-              <span>Mensagem do visitante</span>
+              <span>Mensagem</span>
               <strong>{solicitacao.mensagem}</strong>
             </div>
           )}
@@ -540,7 +593,7 @@ function Morador() {
       return (
         <div className="morador-feedback">
           <div className="morador-loading" />
-          <p>Carregando solicitações de visitantes...</p>
+          <p>Carregando solicitações de acesso...</p>
         </div>
       )
     }
@@ -551,10 +604,7 @@ function Morador() {
           <h3>Não foi possível carregar as solicitações.</h3>
           <p>{erroSolicitacoes}</p>
 
-          <button
-            type="button"
-            onClick={carregarSolicitacoes}
-          >
+          <button type="button" onClick={carregarSolicitacoes}>
             Tentar novamente
           </button>
         </div>
@@ -599,14 +649,17 @@ function Morador() {
           <p>
             {solicitacoes.length}{' '}
             {solicitacoes.length === 1
-              ? 'registro encontrado'
-              : 'registros encontrados'}
+              ? 'solicitação encontrada'
+              : 'solicitações encontradas'}
           </p>
 
           <button
             type="button"
             onClick={carregarSolicitacoes}
-            disabled={carregandoSolicitacoes || solicitacaoEmProcessamento !== null}
+            disabled={
+              carregandoSolicitacoes ||
+              solicitacaoEmProcessamento !== null
+            }
           >
             ↻ Atualizar
           </button>
@@ -617,8 +670,8 @@ function Morador() {
             <div className="morador-empty-icon">♙</div>
             <h3>Nenhuma solicitação encontrada</h3>
             <p>
-              Quando um visitante solicitar acesso ao seu apartamento,
-              a solicitação aparecerá nesta área.
+              Quando alguém solicitar acesso ao seu apartamento,
+              o pedido aparecerá nesta área.
             </p>
 
             <button
@@ -633,7 +686,7 @@ function Morador() {
           <div className="morador-solicitacoes-grupos">
             {renderizarGrupoSolicitacoes('Aguardando sua aprovação', pendentes)}
             {renderizarGrupoSolicitacoes('Autorizações válidas', autorizadas)}
-            {renderizarGrupoSolicitacoes('Autorizações expiradas', expiradas)}
+            {renderizarGrupoSolicitacoes('Solicitações expiradas', expiradas)}
             {renderizarGrupoSolicitacoes('Solicitações recusadas', recusadas)}
             {renderizarGrupoSolicitacoes('Solicitações canceladas', canceladas)}
           </div>
@@ -731,39 +784,19 @@ function Morador() {
               </div>
 
               <div className="morador-section-heading">
-                <h3>Acesso rápido</h3>
-                <p>Escolha uma opção para continuar.</p>
+                <h3>Resumo do seu apartamento</h3>
+                <p>
+                  Acompanhe abaixo a situação das suas autorizações
+                  e solicitações de acesso.
+                </p>
               </div>
 
-              <div className="morador-cards">
-                {secoes.slice(1).map((secao) => (
-                  <button
-                    key={secao.id}
-                    type="button"
-                    className="morador-card"
-                    onClick={() => navegarPara(secao.id)}
-                  >
-                    <span className="morador-card-icon">
-                      {secao.icone}
-                    </span>
-
-                    <strong>{secao.nome}</strong>
-
-                    <span className="morador-card-description">
-                      {secao.descricao}
-                    </span>
-
-                    <span className="morador-card-link">
-                      Acessar →
-                    </span>
-                  </button>
-                ))}
-              </div>
+              {renderizarIndicadores()}
             </>
           ) : secaoAtiva === 'autorizacoes' ? (
             <section className="morador-autorizacoes">
               <div className="morador-section-heading">
-                <h3>Suas autorizações</h3>
+                <h3>Minhas autorizações</h3>
                 <p>
                   Consulte os períodos e horários autorizados
                   para visitantes e prestadores.
@@ -772,13 +805,13 @@ function Morador() {
 
               {renderizarAutorizacoes()}
             </section>
-          ) : secaoAtiva === 'visitantes' ? (
+          ) : secaoAtiva === 'solicitacoes' ? (
             <section className="morador-autorizacoes">
               <div className="morador-section-heading">
-                <h3>Solicitações e autorizações de visitantes</h3>
+                <h3>Solicitações de acesso</h3>
                 <p>
-                  Aprove solicitações e acompanhe as autorizações
-                  válidas por 24 horas.
+                  Analise solicitações de visitantes e prestadores
+                  e acompanhe as autorizações.
                 </p>
               </div>
 
@@ -819,3 +852,4 @@ function Morador() {
 }
 
 export default Morador
+

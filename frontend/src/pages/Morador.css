@@ -1,36 +1,48 @@
 
+/* =========================================
+   PALMCONDO - ÁREA DO MORADOR
+   Identidade visual clean e responsiva
+========================================= */
+
 .morador-layout {
   --pc-yellow: #ffd000;
+  --pc-yellow-light: #fff5cc;
   --pc-black: #171717;
-  --pc-background: #f7f7f4;
+  --pc-background: #f8f8f6;
+  --pc-white: #ffffff;
+  --pc-text: #292929;
   --pc-muted: #737373;
+  --pc-border: #eaeae5;
 
   min-height: 100vh;
   display: flex;
-  color: #242424;
+  color: var(--pc-text);
   background: var(--pc-background);
+  font-family: inherit;
 }
 
-/* MENU LATERAL */
+/* =========================================
+   MENU LATERAL
+========================================= */
 
 .morador-sidebar {
-  width: 265px;
-  min-width: 265px;
+  width: 260px;
+  min-width: 260px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 28px 20px 20px;
-  background: #fff;
-  border-right: 1px solid #e9e9e3;
+  padding: 28px 16px 20px;
+  background: var(--pc-white);
+  border-right: 1px solid var(--pc-border);
 }
 
 .morador-brand {
   display: inline-block;
-  margin: 0 0 48px 10px;
+  margin: 0 0 52px 10px;
   color: var(--pc-black);
-  font-size: 24px;
+  font-size: 25px;
   font-weight: 850;
-  letter-spacing: -1px;
+  letter-spacing: -1.2px;
   text-decoration: none;
 }
 
@@ -40,33 +52,34 @@
 
 .morador-sidebar-label {
   margin: 0 0 14px 10px;
-  color: #999;
-  font-size: 9px;
+  color: #929292;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 1.3px;
+  letter-spacing: 1.4px;
 }
 
 .morador-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .morador-nav-item {
   width: 100%;
+  min-height: 48px;
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 13px 12px;
-  color: #666;
+  gap: 12px;
+  padding: 12px 13px;
+  color: #626262;
   background: transparent;
   border: 0;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 550;
   text-align: left;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .morador-nav-item:hover {
@@ -76,35 +89,38 @@
 
 .morador-nav-item.ativo {
   color: var(--pc-black);
-  background: #fff5c7;
+  background: var(--pc-yellow-light);
   font-weight: 800;
 }
 
 .morador-nav-icon {
-  width: 20px;
+  width: 21px;
+  flex-shrink: 0;
   font-size: 18px;
   text-align: center;
 }
 
-/* USUÁRIO E SAÍDA */
+/* =========================================
+   USUÁRIO E SAÍDA
+========================================= */
 
 .morador-sidebar-footer {
   margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
+  padding-top: 19px;
+  border-top: 1px solid var(--pc-border);
 }
 
 .morador-user-info {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 5px 3px 18px;
+  padding: 5px 3px 17px;
 }
 
 .morador-avatar {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,15 +140,16 @@
 
 .morador-user-text strong {
   overflow: hidden;
-  color: #222;
-  font-size: 11px;
+  color: #252525;
+  font-size: 12px;
+  font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .morador-user-text span {
-  color: #888;
-  font-size: 10px;
+  color: #858585;
+  font-size: 11px;
 }
 
 .morador-logout {
@@ -141,14 +158,15 @@
   align-items: center;
   gap: 11px;
   padding: 11px 10px;
-  color: #777;
+  color: #696969;
   background: transparent;
   border: 0;
-  border-radius: 7px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 650;
   text-align: left;
   cursor: pointer;
+  transition: 0.2s;
 }
 
 .morador-logout:hover {
@@ -156,7 +174,9 @@
   background: #fff1ef;
 }
 
-/* CONTEÚDO PRINCIPAL */
+/* =========================================
+   CONTEÚDO PRINCIPAL
+========================================= */
 
 .morador-main {
   min-width: 0;
@@ -167,94 +187,105 @@
 }
 
 .morador-topbar {
-  min-height: 92px;
+  min-height: 88px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 5%;
-  background: #fff;
-  border-bottom: 1px solid #e9e9e3;
+  padding: 17px 5%;
+  background: var(--pc-white);
+  border-bottom: 1px solid var(--pc-border);
 }
 
 .morador-breadcrumb {
-  color: #999;
-  font-size: 10px;
+  color: #858585;
+  font-size: 11px;
 }
 
 .morador-topbar h1 {
   margin: 6px 0 0;
   color: var(--pc-black);
-  font-size: 19px;
-  font-weight: 850;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
 }
 
 .morador-topbar-user {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #555;
-  font-size: 11px;
+  color: #444;
+  font-size: 12px;
   font-weight: 650;
 }
 
 .morador-content {
   width: 100%;
-  max-width: 1250px;
+  max-width: 1350px;
   flex: 1;
   margin: 0 auto;
-  padding: 42px 5%;
+  padding: 40px 5%;
 }
 
-/* BOAS-VINDAS */
+/* =========================================
+   BOAS-VINDAS
+========================================= */
 
 .morador-welcome {
-  padding: 30px;
-  background: #fff;
-  border: 1px solid #eaeae4;
-  border-radius: 13px;
+  padding: 36px;
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 14px;
 }
 
 .morador-welcome > span {
-  color: #967500;
-  font-size: 9px;
+  color: #987400;
+  font-size: 10px;
   font-weight: 850;
-  letter-spacing: 1.4px;
+  letter-spacing: 1.5px;
 }
 
 .morador-welcome h2 {
-  margin: 13px 0 9px;
+  margin: 14px 0 10px;
   color: var(--pc-black);
-  font-size: clamp(24px, 3vw, 32px);
+  font-size: clamp(27px, 3vw, 34px);
   font-weight: 850;
-  letter-spacing: -1px;
+  letter-spacing: -1.1px;
 }
 
 .morador-welcome p {
-  max-width: 600px;
+  max-width: 650px;
   margin: 0;
   color: var(--pc-muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
 }
 
-/* ACESSO RÁPIDO */
+/* =========================================
+   TÍTULOS DAS SEÇÕES
+========================================= */
 
 .morador-section-heading {
-  margin: 34px 0 18px;
+  margin: 34px 0 20px;
 }
 
 .morador-section-heading h3 {
-  margin: 0 0 6px;
+  margin: 0 0 7px;
   color: #222;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
+  letter-spacing: -0.2px;
 }
 
 .morador-section-heading p {
   margin: 0;
-  color: #888;
-  font-size: 11px;
+  color: #777;
+  font-size: 13px;
+  line-height: 1.6;
 }
+
+/* =========================================
+   ACESSO RÁPIDO
+========================================= */
 
 .morador-cards {
   display: grid;
@@ -263,136 +294,62 @@
 }
 
 .morador-card {
-  min-height: 175px;
+  min-height: 170px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 22px;
-  background: #fff;
-  border: 1px solid #eaeae4;
-  border-radius: 11px;
+  padding: 23px;
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
   text-align: left;
   cursor: pointer;
-  transition: 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .morador-card:hover {
-  border-color: var(--pc-yellow);
+  border-color: #e6c000;
   transform: translateY(-2px);
-  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.045);
 }
 
 .morador-card-icon {
-  width: 35px;
-  height: 35px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 13px;
+  margin-bottom: 14px;
   color: var(--pc-black);
-  background: #fff3bd;
-  border-radius: 8px;
-  font-size: 18px;
+  background: var(--pc-yellow-light);
+  border-radius: 9px;
+  font-size: 19px;
 }
 
 .morador-card strong {
-  color: #222;
-  font-size: 12px;
+  color: #252525;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .morador-card-description {
-  margin-top: 7px;
-  color: #888;
-  font-size: 10px;
+  margin-top: 8px;
+  color: #777;
+  font-size: 12px;
   line-height: 1.6;
 }
 
 .morador-card-link {
   margin-top: auto;
-  padding-top: 13px;
-  color: #8a6b00;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-/* TELAS DAS SEÇÕES */
-
-.morador-empty-state {
-  min-height: 350px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 30px;
-  background: #fff;
-  border: 1px solid #eaeae4;
-  border-radius: 13px;
-  text-align: center;
-}
-
-.morador-empty-icon {
-  width: 55px;
-  height: 55px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 18px;
-  color: var(--pc-black);
-  background: #fff3bd;
-  border-radius: 14px;
-  font-size: 25px;
-}
-
-.morador-empty-state h2 {
-  margin: 0 0 9px;
-  color: #222;
-  font-size: 19px;
-  font-weight: 850;
-}
-
-.morador-empty-state p {
-  margin: 0;
-  color: #777;
+  padding-top: 14px;
+  color: #876900;
   font-size: 12px;
-}
-
-.morador-empty-state > span {
-  margin-top: 12px;
-  color: #999;
-  font-size: 10px;
-}
-
-.morador-empty-state button {
-  margin-top: 23px;
-  padding: 11px 17px;
-  color: #171717;
-  background: var(--pc-yellow);
-  border: 0;
-  border-radius: 7px;
-  font-size: 11px;
   font-weight: 800;
-  cursor: pointer;
 }
 
-/* RODAPÉ */
-
-.morador-footer {
-  min-height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 15px 5%;
-  border-top: 1px solid #e9e9e3;
-  color: #888;
-  font-size: 10px;
-}
-
-.morador-footer span {
-  color: #aaa;
-}
-
-/* AUTORIZAÇÕES DO MORADOR */
+/* =========================================
+   AUTORIZAÇÕES E SOLICITAÇÕES
+========================================= */
 
 .morador-autorizacoes {
   width: 100%;
@@ -403,29 +360,29 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .morador-autorizacoes-toolbar p {
   margin: 0;
-  color: #777;
-  font-size: 11px;
+  color: #696969;
+  font-size: 13px;
 }
 
 .morador-autorizacoes-toolbar button {
-  padding: 9px 14px;
-  color: #171717;
+  padding: 11px 16px;
+  color: var(--pc-black);
   background: var(--pc-yellow);
   border: 0;
-  border-radius: 7px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background 0.2s ease;
 }
 
 .morador-autorizacoes-toolbar button:hover {
-  background: #eec300;
+  background: #efc300;
 }
 
 .morador-autorizacoes-toolbar button:disabled {
@@ -440,10 +397,15 @@
 }
 
 .morador-autorizacao-card {
-  padding: 22px;
-  background: #fff;
-  border: 1px solid #eaeae4;
-  border-radius: 11px;
+  padding: 24px;
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.morador-autorizacao-card:hover {
+  border-color: #deded6;
 }
 
 .morador-autorizacao-header {
@@ -451,56 +413,72 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
-  padding-bottom: 17px;
-  border-bottom: 1px solid #eee;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eeeeea;
 }
 
 .morador-autorizacao-tipo {
+  display: inline-block;
   color: #967500;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 850;
-  letter-spacing: 1px;
+  letter-spacing: 1.1px;
   text-transform: uppercase;
+}
+
+.morador-tipo-prestador {
+  color: #7454a6;
+}
+
+.morador-tipo-visitante {
+  color: #967500;
 }
 
 .morador-autorizacao-header h3 {
   margin: 7px 0 0;
-  color: #222;
-  font-size: 15px;
+  color: #252525;
+  font-size: 17px;
   font-weight: 800;
 }
 
+/* =========================================
+   ETIQUETAS DE STATUS
+========================================= */
+
 .morador-status {
-  padding: 7px 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
   border-radius: 20px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .morador-status-ativa {
   color: #176b37;
-  background: #e4f5e9;
+  background: #e7f5eb;
 }
 
 .morador-status-pendente {
-  color: #886300;
-  background: #fff4ce;
+  color: #876300;
+  background: #fff4cf;
 }
 
 .morador-status-utilizada {
   color: #245b9b;
-  background: #e6f0ff;
+  background: #e8f1ff;
 }
 
 .morador-status-expirada {
   color: #666;
-  background: #ededed;
+  background: #eeeeec;
 }
 
 .morador-status-cancelada {
   color: #a12d2d;
-  background: #ffe8e8;
+  background: #ffebeb;
 }
 
 .morador-status-bloqueada {
@@ -510,40 +488,48 @@
 
 .morador-status-desconhecido {
   color: #555;
-  background: #eee;
+  background: #eeeeec;
 }
 
 .morador-status-recusada {
   color: #a12d2d;
-  background: #ffe8e8;
+  background: #ffebeb;
 }
+
+/* =========================================
+   DETALHES DOS CARTÕES
+========================================= */
 
 .morador-autorizacao-detalhes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  padding-top: 18px;
+  gap: 20px 24px;
+  padding-top: 20px;
 }
 
 .morador-autorizacao-detalhes > div {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .morador-autorizacao-detalhes span {
-  color: #999;
-  font-size: 10px;
+  color: #777;
+  font-size: 12px;
 }
 
 .morador-autorizacao-detalhes strong {
-  color: #333;
-  font-size: 11px;
+  color: #292929;
+  font-size: 13px;
   font-weight: 700;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-/* GRUPOS DE SOLICITAÇÕES DE VISITANTES */
+/* =========================================
+   GRUPOS DE SOLICITAÇÕES
+========================================= */
 
 .morador-solicitacoes-grupos {
   display: flex;
@@ -559,63 +545,67 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 13px;
+  margin: 0 0 14px;
 }
 
 .morador-grupo-solicitacoes-titulo h3 {
   margin: 0;
   color: #252525;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .morador-grupo-solicitacoes-titulo span {
-  min-width: 23px;
-  height: 23px;
+  min-width: 25px;
+  height: 25px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0 7px;
-  color: #5f5f5f;
-  background: #eaeae6;
+  color: #555;
+  background: #ededeb;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
-/* AVISO DA AUTORIZAÇÃO DE 24 HORAS */
+/* =========================================
+   AVISO DE AUTORIZAÇÃO
+========================================= */
 
 .morador-autorizacao-aviso {
-  margin-top: 17px;
-  padding: 11px 13px;
+  margin-top: 18px;
+  padding: 13px 15px;
   color: #176b37;
-  background: #edf8f0;
-  border: 1px solid #d5eddb;
-  border-radius: 7px;
-  font-size: 11px;
+  background: #eff8f1;
+  border: 1px solid #d9ecdd;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 650;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-/* AÇÕES DAS SOLICITAÇÕES DE VISITANTES */
+/* =========================================
+   BOTÕES DE APROVAÇÃO E RECUSA
+========================================= */
 
 .morador-solicitacao-acoes {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 21px;
 }
 
 .morador-solicitacao-acoes button {
-  min-width: 115px;
-  padding: 11px 20px;
+  min-width: 120px;
+  padding: 12px 20px;
   border: 1px solid transparent;
-  border-radius: 7px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .morador-btn-aprovar {
@@ -626,7 +616,6 @@
 
 .morador-btn-aprovar:hover:not(:disabled) {
   background: #176b37;
-  box-shadow: 0 3px 9px rgba(33, 131, 72, 0.18);
   transform: translateY(-1px);
 }
 
@@ -638,7 +627,6 @@
 
 .morador-btn-recusar:hover:not(:disabled) {
   background: #a92e2e;
-  box-shadow: 0 3px 9px rgba(196, 61, 61, 0.18);
   transform: translateY(-1px);
 }
 
@@ -646,45 +634,109 @@
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
-/* CARREGAMENTO, ERROS E LISTA VAZIA */
+/* =========================================
+   ESTADOS VAZIOS E FEEDBACK
+========================================= */
 
-.morador-feedback {
-  min-height: 260px;
+.morador-empty-state {
+  min-height: 350px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 30px;
-  background: #fff;
-  border: 1px solid #eaeae4;
-  border-radius: 11px;
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.morador-empty-icon {
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  color: var(--pc-black);
+  background: var(--pc-yellow-light);
+  border-radius: 13px;
+  font-size: 24px;
+}
+
+.morador-empty-state h2 {
+  margin: 0 0 10px;
+  color: #222;
+  font-size: 21px;
+  font-weight: 850;
+}
+
+.morador-empty-state p {
+  margin: 0;
+  color: #696969;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.morador-empty-state > span {
+  margin-top: 13px;
+  color: #858585;
+  font-size: 12px;
+}
+
+.morador-empty-state button {
+  margin-top: 24px;
+  padding: 12px 18px;
+  color: var(--pc-black);
+  background: var(--pc-yellow);
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.morador-empty-state button:hover {
+  background: #efc300;
+}
+
+.morador-feedback {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
   text-align: center;
 }
 
 .morador-feedback h3 {
   margin: 14px 0 7px;
   color: #222;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .morador-feedback p {
   max-width: 420px;
-  color: #888;
-  font-size: 11px;
+  color: #777;
+  font-size: 13px;
   line-height: 1.7;
 }
 
 .morador-feedback button {
-  margin-top: 12px;
-  padding: 10px 16px;
-  color: #171717;
+  margin-top: 13px;
+  padding: 11px 17px;
+  color: var(--pc-black);
   background: var(--pc-yellow);
   border: 0;
-  border-radius: 7px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -697,17 +749,19 @@
   color: #a12d2d;
 }
 
-/* MENSAGEM COMPACTA DE SUCESSO */
+/* =========================================
+   MENSAGEM DE SUCESSO
+========================================= */
 
 .morador-feedback-sucesso {
   min-height: auto;
   display: block;
-  margin-bottom: 16px;
-  padding: 13px 17px;
+  margin-bottom: 17px;
+  padding: 15px 18px;
   color: #176b37;
-  background: #edf8f0;
-  border: 1px solid #ccebd4;
-  border-radius: 8px;
+  background: #eff8f1;
+  border: 1px solid #d4ead9;
+  border-radius: 9px;
   text-align: left;
 }
 
@@ -715,15 +769,19 @@
   max-width: none;
   margin: 0;
   color: #176b37;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
+/* =========================================
+   ANIMAÇÃO DE CARREGAMENTO
+========================================= */
+
 .morador-loading {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #eee;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #eeeeea;
   border-top-color: var(--pc-yellow);
   border-radius: 50%;
   animation: morador-girar 0.8s linear infinite;
@@ -735,20 +793,52 @@
   }
 }
 
-/* RESPONSIVIDADE */
+/* =========================================
+   RODAPÉ
+========================================= */
 
-@media (max-width: 800px) {
+.morador-footer {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 14px 5%;
+  border-top: 1px solid var(--pc-border);
+  color: #777;
+  font-size: 11px;
+  background: var(--pc-background);
+}
+
+.morador-footer span {
+  color: #929292;
+}
+
+/* =========================================
+   RESPONSIVIDADE - TABLETS
+========================================= */
+
+@media (max-width: 900px) {
   .morador-sidebar {
-    width: 220px;
-    min-width: 220px;
-    padding-right: 14px;
-    padding-left: 14px;
+    width: 225px;
+    min-width: 225px;
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+
+  .morador-content {
+    padding-right: 4%;
+    padding-left: 4%;
   }
 
   .morador-cards {
-    grid-template-columns: 1fr;
+    gap: 13px;
   }
 }
+
+/* =========================================
+   RESPONSIVIDADE - CELULARES
+========================================= */
 
 @media (max-width: 600px) {
   .morador-layout {
@@ -759,18 +849,19 @@
     width: 100%;
     min-width: 0;
     min-height: auto;
-    padding: 17px 15px 12px;
+    padding: 16px 15px 11px;
     border-right: 0;
-    border-bottom: 1px solid #e9e9e3;
+    border-bottom: 1px solid var(--pc-border);
   }
 
   .morador-brand {
-    margin: 0 0 18px 5px;
-    font-size: 21px;
+    margin: 0 0 17px 5px;
+    font-size: 23px;
   }
 
   .morador-sidebar-label {
     margin-left: 5px;
+    margin-bottom: 10px;
   }
 
   .morador-nav {
@@ -778,14 +869,16 @@
     gap: 5px;
     overflow-x: auto;
     padding-bottom: 7px;
+    scrollbar-width: thin;
   }
 
   .morador-nav-item {
     width: auto;
     min-width: max-content;
+    min-height: 42px;
     gap: 7px;
-    padding: 10px;
-    font-size: 10px;
+    padding: 9px 11px;
+    font-size: 12px;
   }
 
   .morador-nav-icon {
@@ -796,7 +889,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 10px;
     padding-top: 10px;
   }
 
@@ -806,11 +900,16 @@
 
   .morador-logout {
     width: auto;
+    padding: 10px;
   }
 
   .morador-topbar {
     min-height: 75px;
-    padding: 14px 20px;
+    padding: 13px 18px;
+  }
+
+  .morador-topbar h1 {
+    font-size: 19px;
   }
 
   .morador-topbar-user span {
@@ -818,32 +917,66 @@
   }
 
   .morador-content {
-    padding: 25px 16px;
+    padding: 24px 15px;
   }
 
   .morador-welcome {
-    padding: 22px;
+    padding: 24px;
   }
 
-  .morador-footer {
-    padding: 15px 18px;
+  .morador-welcome h2 {
+    font-size: 27px;
+  }
+
+  .morador-welcome p {
+    font-size: 13px;
+  }
+
+  .morador-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .morador-card {
+    min-height: 155px;
+    padding: 21px;
+  }
+
+  .morador-section-heading {
+    margin-top: 28px;
+  }
+
+  .morador-section-heading h3 {
+    font-size: 17px;
+  }
+
+  .morador-section-heading p {
+    font-size: 12px;
   }
 
   .morador-autorizacao-card {
-    padding: 17px;
+    padding: 18px;
   }
 
   .morador-autorizacao-header {
     flex-direction: column;
+    gap: 12px;
+  }
+
+  .morador-autorizacao-header h3 {
+    font-size: 16px;
   }
 
   .morador-autorizacao-detalhes {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 16px;
   }
 
   .morador-autorizacoes-toolbar {
-    align-items: flex-start;
+    align-items: center;
+  }
+
+  .morador-autorizacoes-toolbar p {
+    font-size: 12px;
   }
 
   .morador-solicitacao-acoes {
@@ -853,17 +986,27 @@
   .morador-solicitacao-acoes button {
     min-width: 0;
     flex: 1;
-    padding: 11px 12px;
+    padding: 12px 10px;
+    font-size: 12px;
   }
 
   .morador-grupo-solicitacoes-titulo h3 {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .morador-solicitacoes-grupos {
     gap: 23px;
   }
+
+  .morador-footer {
+    padding: 14px 17px;
+    font-size: 10px;
+  }
 }
+
+/* =========================================
+   TELAS MUITO PEQUENAS
+========================================= */
 
 @media (max-width: 380px) {
   .morador-footer span {
@@ -872,5 +1015,23 @@
 
   .morador-grupo-solicitacoes-titulo {
     flex-wrap: wrap;
+  }
+
+  .morador-topbar {
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+
+  .morador-content {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .morador-welcome {
+    padding: 20px;
+  }
+
+  .morador-welcome h2 {
+    font-size: 24px;
   }
 }
