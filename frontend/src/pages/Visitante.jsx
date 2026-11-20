@@ -524,7 +524,14 @@ function Visitante() {
 
                   {acompanhamento.nome && (
                     <p className="mb-0 mt-2">
-                      <strong>Solicitante:</strong> {acompanhamento.nome}
+                      <strong>Nome completo:</strong> {acompanhamento.nome}
+                    </p>
+                  )}
+
+                  {acompanhamento.cpf && (
+                    <p className="mb-0 mt-1">
+                      <strong>CPF:</strong>{' '}
+                      {formatarCPF(acompanhamento.cpf)}
                     </p>
                   )}
 

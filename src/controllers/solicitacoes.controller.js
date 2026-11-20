@@ -377,6 +377,206 @@ async function criarSolicitacaoPublica(req, res) {
     }
 }
 
+// CRIAR CONVITE DE ACESSO PELO MORADOR.
+async function criarConviteMorador(req, res) {
+    try {
+        const condominioId = converterId(req.user?.condominio_id);
+        const usuarioId = converterId(req.user?.id);
+
+        if (!condominioId || !usuarioId) {
+            return res.status(401).json({
+                erro: 'Dados de autenticação inválidos.'
+            });
+        }
+
+        if (req.user.tipo_usuario !== 'MORADOR') {
+            return res.status(403).json({
+                erro: 'Apenas moradores podem criar convites.'
+            });
+        }
+
+        const {
+            tipo_pessoa,
+            nome,
+            cpf
+        } = req.body || {};
+
+        if (!tipo_pessoa || !nome || !cpf) {
+            return res.status(400).json({
+                erro: 'Tipo de acesso, nome e CPF são obrigatórios.'
+            });
+        }
+
+        const tipoPessoaLimpo = String(tipo_pessoa)
+            .trim()
+            .toUpperCase();
+
+        const nomeLimpo = String(nome).trim();
+        const cpfLimpo = String(cpf).replace(/\D/g, '');
+
+        if (!TIPOS_PESSOA_PERMITIDOS.includes(tipoPessoaLimpo)) {
+            return res.status(400).json({
+                erro: 'Tipo de acesso inválido. Utilize VISITANTE ou PRESTADOR.'
+            });
+        }
+
+        if (!nomeLimpo || nomeLimpo.length > 150) {
+            return res.status(400).json({
+                erro: 'O nome deve possuir entre 1 e 150 caracteres.'
+            });
+        }
+
+        if (!validarCPF(cpfLimpo)) {
+            return res.status(400).json({
+                erro: 'CPF inválido. Verifique os números e os dígitos verificadores.'
+            });
+        }
+
+        // Confirma o condomínio e recupera seu código público.
+        const condominio = await prisma.condominios.findFirst({
+            where: {
+                id: condominioId,
+                ativo: true
+            },
+            select: {
+                id: true,
+                codigo_publico: true
+            }
+        });
+
+        if (!condominio || !condominio.codigo_publico) {
+            return res.status(404).json({
+                erro: 'Condomínio não encontrado, inativo ou sem código público.'
+            });
+        }
+
+        // Identifica o morador e seu apartamento pelo usuário autenticado.
+        const morador = await prisma.moradores.findFirst({
+            where: {
+                usuario_id: usuarioId,
+                ativo: true,
+                apartamentos: {
+                    condominio_id: condominioId,
+                    ativo: true
+                }
+            },
+            select: {
+                id: true,
+                apartamento_id: true,
+                apartamentos: {
+                    select: {
+                        id: true,
+                        bloco: true,
+                        numero: true
+                    }
+                }
+            }
+        });
+
+        if (!morador || !morador.apartamentos) {
+            return res.status(404).json({
+                erro: 'Cadastro de morador ou apartamento não encontrado ou inativo.'
+            });
+        }
+
+        const dataHoraResposta = new Date();
+        const codigoExpiraEm = calcularExpiracao(dataHoraResposta);
+
+        let conviteCriado = null;
+        let tokenAcompanhamento = null;
+        let codigoLiberacao = null;
+
+        // Cada convite é independente.
+        // Nome e CPF podem se repetir sem restrição entre convites.
+        // Não consultamos nem criamos registros na tabela pessoas.
+        for (let tentativa = 0; tentativa < 5; tentativa++) {
+            const token = gerarTokenAcompanhamento();
+            const tokenHash = gerarHashToken(token);
+
+            const codigo = gerarCodigoLiberacao();
+            const codigoHash = gerarHashCodigo(codigo);
+            const codigoCriptografado = criptografarCodigo(codigo);
+
+            try {
+                conviteCriado = await prisma.solicitacoes_acesso.create({
+                    data: {
+                        condominio_id: condominioId,
+                        nome: nomeLimpo,
+                        cpf: cpfLimpo,
+                        tipo_pessoa: tipoPessoaLimpo,
+                        apartamento_destino_id: morador.apartamento_id,
+                        status: 'AUTORIZADA',
+                        respondido_por: usuarioId,
+                        data_hora_resposta: dataHoraResposta,
+                        token_acompanhamento_hash: tokenHash,
+                        codigo_liberacao_hash: codigoHash,
+                        codigo_liberacao_criptografado: codigoCriptografado,
+                        codigo_expira_em: codigoExpiraEm
+                    },
+                    select: {
+                        id: true,
+                        nome: true,
+                        cpf: true,
+                        tipo_pessoa: true,
+                        status: true,
+                        data_hora_solicitacao: true,
+                        data_hora_resposta: true,
+                        codigo_expira_em: true
+                    }
+                });
+
+                tokenAcompanhamento = token;
+                codigoLiberacao = codigo;
+
+                break;
+
+            } catch (error) {
+                if (
+                    error.code === 'P2002' &&
+                    tentativa < 4
+                ) {
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        if (!conviteCriado) {
+            throw new Error('Não foi possível gerar um convite único.');
+        }
+
+        return res.status(201).json({
+            mensagem: 'Convite criado e autorizado com sucesso.',
+            token_acompanhamento: tokenAcompanhamento,
+            codigo_publico: condominio.codigo_publico,
+            codigo_liberacao: codigoLiberacao,
+            convite: {
+                id: String(conviteCriado.id),
+                nome: conviteCriado.nome,
+                cpf: conviteCriado.cpf,
+                tipo_pessoa: conviteCriado.tipo_pessoa,
+                status: conviteCriado.status,
+                data_hora_solicitacao: conviteCriado.data_hora_solicitacao,
+                data_hora_resposta: conviteCriado.data_hora_resposta,
+                codigo_expira_em: conviteCriado.codigo_expira_em,
+                apartamento: {
+                    id: String(morador.apartamentos.id),
+                    bloco: morador.apartamentos.bloco,
+                    numero: morador.apartamentos.numero
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('ERRO AO CRIAR CONVITE DO MORADOR:', error);
+
+        return res.status(500).json({
+            erro: 'Erro ao criar convite de acesso.'
+        });
+    }
+}
+
 // CONSULTAR SOLICITAÇÃO PÚBLICA PELO TOKEN PRIVADO.
 async function consultarSolicitacaoPublica(req, res) {
     try {
@@ -397,6 +597,7 @@ async function consultarSolicitacaoPublica(req, res) {
             select: {
                 id: true,
                 nome: true,
+                cpf: true,
                 tipo_pessoa: true,
                 status: true,
                 mensagem: true,
@@ -445,6 +646,7 @@ async function consultarSolicitacaoPublica(req, res) {
         return res.status(200).json({
             solicitacao: {
                 nome: solicitacao.nome,
+                cpf: solicitacao.cpf,
                 tipo_pessoa: solicitacao.tipo_pessoa,
                 status: solicitacao.status,
                 mensagem: solicitacao.mensagem,
@@ -803,6 +1005,7 @@ async function responderSolicitacaoMorador(req, res) {
 
 module.exports = {
     criarSolicitacaoPublica,
+    criarConviteMorador,
     consultarSolicitacaoPublica,
     listarSolicitacoesMorador,
     responderSolicitacaoMorador

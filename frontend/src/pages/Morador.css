@@ -115,11 +115,67 @@
   font-weight: 800;
 }
 
+/* Ícones modernos e padronizados do menu */
+
 .morador-nav-icon {
   width: 21px;
+  height: 21px;
   flex-shrink: 0;
-  font-size: 19px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: #555;
+  font-size: 0;
+}
+
+.morador-nav-icon::before {
+  content: "";
+  display: block;
+  width: 19px;
+  height: 19px;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Visão geral - casa */
+.morador-nav-item:nth-child(1) .morador-nav-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 10 9-7 9 7'/%3E%3Cpath d='M5 9v12h14V9M9 21v-7h6v7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 10 9-7 9 7'/%3E%3Cpath d='M5 9v12h14V9M9 21v-7h6v7'/%3E%3C/svg%3E");
+}
+
+/* Criar convite - envelope */
+.morador-nav-item:nth-child(2) .morador-nav-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E");
+}
+
+/* Minhas autorizações - confirmação */
+.morador-nav-item:nth-child(3) .morador-nav-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E");
+}
+
+/* Solicitações de acesso - usuário */
+.morador-nav-item:nth-child(4) .morador-nav-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='3'/%3E%3Cpath d='M5 21c0-4 3-7 7-7s7 3 7 7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='3'/%3E%3Cpath d='M5 21c0-4 3-7 7-7s7 3 7 7'/%3E%3C/svg%3E");
+}
+
+/* Histórico - relógio */
+.morador-nav-item:nth-child(5) .morador-nav-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+}
+
+.morador-nav-item:hover .morador-nav-icon,
+.morador-nav-item.ativo .morador-nav-icon {
+  color: var(--pc-black);
 }
 
 /* =========================================
@@ -300,6 +356,67 @@
   color: #888;
   font-size: 11px;
   line-height: 1.6;
+}
+
+/* =========================================
+   CONVITE - CENTRALIZAÇÃO
+========================================= */
+
+.morador-autorizacoes:has(> form) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.morador-autorizacoes:has(> form) > .morador-section-heading {
+  width: 100%;
+  max-width: 620px;
+  margin: 22px auto 17px;
+  text-align: left;
+}
+
+.morador-autorizacoes:has(> form) > form {
+  width: 100%;
+  max-width: 620px;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.morador-autorizacoes:has(> form) > div[style*="max-width"] {
+  width: 100%;
+  max-width: 620px !important;
+  box-sizing: border-box;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* Campos do formulário de convite */
+
+.morador-autorizacoes:has(> form) select,
+.morador-autorizacoes:has(> form) input {
+  background-color: #ffffff !important;
+  color: #242424;
+  font-family: inherit;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.morador-autorizacoes:has(> form) select {
+  cursor: pointer;
+  color-scheme: light;
+}
+
+.morador-autorizacoes:has(> form) select:focus,
+.morador-autorizacoes:has(> form) input:focus {
+  border-color: #d6ae00 !important;
+  box-shadow: 0 0 0 3px rgba(255, 208, 0, 0.16);
+}
+
+.morador-autorizacoes:has(> form) select:hover,
+.morador-autorizacoes:has(> form) input:hover {
+  border-color: #c5b36a !important;
 }
 
 /* =========================================
@@ -1031,8 +1148,13 @@
   }
 
   .morador-nav-icon {
-    width: auto;
-    font-size: 16px;
+    width: 19px;
+    height: 19px;
+  }
+
+  .morador-nav-icon::before {
+    width: 17px;
+    height: 17px;
   }
 
   .morador-topbar {
@@ -1102,6 +1224,14 @@
 
   .morador-section-heading p {
     font-size: 11px;
+  }
+
+  .morador-autorizacoes:has(> form) > .morador-section-heading {
+    margin-top: 10px;
+  }
+
+  .morador-autorizacoes:has(> form) > form {
+    padding: 19px !important;
   }
 
   .morador-cards {

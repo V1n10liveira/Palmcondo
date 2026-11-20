@@ -12,6 +12,12 @@ const secoes = [
     descricao: 'Resumo da sua área de morador.'
   },
   {
+    id: 'convite',
+    nome: 'Criar convite',
+    icone: '✉',
+    descricao: 'Gere convites autorizados para visitantes e prestadores.'
+  },
+  {
     id: 'autorizacoes',
     nome: 'Minhas autorizações',
     icone: '✓',
@@ -151,12 +157,22 @@ function Morador() {
   const [filtroDataInicial, setFiltroDataInicial] = useState('')
   const [filtroDataFinal, setFiltroDataFinal] = useState('')
 
+  // Estados da criação de convites.
+  const [tipoConvite, setTipoConvite] = useState('VISITANTE')
+  const [nomeConvite, setNomeConvite] = useState('')
+  const [cpfConvite, setCpfConvite] = useState('')
+  const [criandoConvite, setCriandoConvite] = useState(false)
+  const [erroConvite, setErroConvite] = useState('')
+  const [mensagemConvite, setMensagemConvite] = useState('')
+  const [conviteGerado, setConviteGerado] = useState(null)
+  const [copiandoLinkConvite, setCopiandoLinkConvite] = useState(false)
+  const [linkConviteCopiado, setLinkConviteCopiado] = useState(false)
+
   const secaoAtual = secoes.find(
     (secao) => secao.id === secaoAtiva
   )
 
   // Prepara o áudio na primeira interação do morador com a página.
-  // Não é necessário clicar no sino: qualquer clique, toque ou tecla serve.
   async function habilitarSomNotificacoes() {
     if (audioLiberadoRef.current || audioHabilitandoRef.current) {
       return
@@ -189,7 +205,6 @@ function Morador() {
     }
   }
 
-  // Libera o áudio por meio da primeira interação normal com a página.
   useEffect(() => {
     function aoInteragir() {
       habilitarSomNotificacoes()
@@ -264,7 +279,6 @@ function Morador() {
     }
   }
 
-  // Atualiza a lista e identifica notificações que chegaram recentemente.
   function atualizarEstadoNotificacoes(resposta, emitirSom = false) {
     const lista = Array.isArray(resposta?.notificacoes)
       ? resposta.notificacoes
@@ -280,8 +294,6 @@ function Morador() {
           !idsNotificacoesRef.current.has(String(notificacao.id))
       )
 
-      // Cada novo ID gera um alerta, independentemente das notificações
-      // anteriores estarem pendentes, lidas ou não lidas.
       if (emitirSom && chegouNotificacaoNova) {
         tocarSomNotificacao()
       }
@@ -354,7 +366,6 @@ function Morador() {
     }
   }, [])
 
-  // Carrega as notificações e atualiza automaticamente a cada 15 segundos.
   useEffect(() => {
     let ativo = true
 
@@ -426,7 +437,99 @@ function Morador() {
     setSecaoAtiva(secao)
   }
 
-  // Marca uma notificação específica como lida.
+  // Cria um convite já autorizado para o morador autenticado.
+  async function criarConvite(event) {
+    event.preventDefault()
+
+    setErroConvite('')
+    setMensagemConvite('')
+    setConviteGerado(null)
+    setLinkConviteCopiado(false)
+
+    const nome = nomeConvite.trim()
+    const cpf = cpfConvite.replace(/\D/g, '')
+
+    if (!nome) {
+      setErroConvite('Informe o nome completo do visitante ou prestador.')
+      return
+    }
+
+    if (cpf.length !== 11) {
+      setErroConvite('Informe um CPF com 11 números.')
+      return
+    }
+
+    setCriandoConvite(true)
+
+    try {
+      const resposta = await api.post('/visitantes/convites', {
+        nome,
+        cpf,
+        tipo_pessoa: tipoConvite
+      })
+
+      const codigoPublico = resposta?.codigo_publico
+      const token = resposta?.token_acompanhamento
+      const codigoLiberacao = resposta?.codigo_liberacao
+
+      if (!codigoPublico || !token || !codigoLiberacao) {
+        throw new Error(
+          'A resposta do servidor não contém todos os dados necessários para exibir o convite.'
+        )
+      }
+
+      const link = `${window.location.origin}/visitante/${encodeURIComponent(codigoPublico)}#token=${encodeURIComponent(token)}`
+
+      setConviteGerado({
+        nome: resposta.convite?.nome || nome,
+        tipo: resposta.convite?.tipo_pessoa || tipoConvite,
+        codigo: codigoLiberacao,
+        link,
+        apartamento: resposta.convite?.apartamento || null,
+        validade: resposta.convite?.codigo_expira_em || null
+      })
+
+      setMensagemConvite(
+        resposta.mensagem || 'Convite criado e autorizado com sucesso.'
+      )
+
+      setNomeConvite('')
+      setCpfConvite('')
+    } catch (error) {
+      setErroConvite(
+        error.message || 'Não foi possível criar o convite.'
+      )
+    } finally {
+      setCriandoConvite(false)
+    }
+  }
+
+  // Copia o link e atualiza o próprio botão para confirmar a ação.
+  async function copiarLinkConvite() {
+    if (!conviteGerado?.link || copiandoLinkConvite) return
+
+    setCopiandoLinkConvite(true)
+    setErroConvite('')
+
+    try {
+      await navigator.clipboard.writeText(conviteGerado.link)
+
+      setLinkConviteCopiado(true)
+      setMensagemConvite(
+        'Link copiado com sucesso! Agora você pode enviá-lo pelo WhatsApp.'
+      )
+    } catch (error) {
+      console.warn('Não foi possível copiar o link automaticamente.', error)
+
+      setLinkConviteCopiado(false)
+      setErroConvite(
+        'Não foi possível copiar automaticamente. Selecione o link exibido e copie manualmente.'
+      )
+    } finally {
+      setCopiandoLinkConvite(false)
+    }
+  }
+
   async function marcarNotificacaoComoLida(notificacao) {
     if (notificacao.lida || notificacaoEmProcessamento !== null) {
       return
@@ -456,7 +559,6 @@ function Morador() {
     }
   }
 
-  // Marca todas as notificações como lidas.
   async function marcarTodasComoLidas() {
     if (totalNaoLidas === 0 || marcandoTodasComoLidas) {
       return
@@ -520,6 +622,354 @@ function Morador() {
     } finally {
       setSolicitacaoEmProcessamento(null)
     }
+  }
+
+  function renderizarConvite() {
+    return (
+      <section className="morador-autorizacoes">
+        <div className="morador-section-heading">
+          <h3>Criar convite</h3>
+          <p>
+            Gere um convite com acesso previamente autorizado e compartilhe
+            o link individual com o visitante ou prestador.
+          </p>
+        </div>
+
+        {erroConvite && (
+          <div className="morador-feedback morador-feedback-erro">
+            <p>{erroConvite}</p>
+          </div>
+        )}
+
+        {mensagemConvite && (
+          <div className="morador-feedback morador-feedback-sucesso">
+            <p>{mensagemConvite}</p>
+          </div>
+        )}
+
+        <form
+          onSubmit={criarConvite}
+          style={{
+            maxWidth: '520px',
+            padding: '20px',
+            background: '#fff',
+            border: '1px solid #e9e9e3',
+            borderRadius: '12px'
+          }}
+        >
+          <div style={{ marginBottom: '15px' }}>
+            <label
+              htmlFor="tipo-convite"
+              style={{
+                display: 'block',
+                marginBottom: '7px',
+                color: '#333',
+                fontSize: '12px',
+                fontWeight: 700
+              }}
+            >
+              Tipo de acesso
+            </label>
+
+            <select
+              id="tipo-convite"
+              value={tipoConvite}
+              onChange={(event) => setTipoConvite(event.target.value)}
+              disabled={criandoConvite}
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '13px'
+              }}
+            >
+              <option value="VISITANTE">Visitante</option>
+              <option value="PRESTADOR">Prestador de serviço</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label
+              htmlFor="nome-convite"
+              style={{
+                display: 'block',
+                marginBottom: '7px',
+                color: '#333',
+                fontSize: '12px',
+                fontWeight: 700
+              }}
+            >
+              Nome completo
+            </label>
+
+            <input
+              id="nome-convite"
+              type="text"
+              value={nomeConvite}
+              onChange={(event) => setNomeConvite(event.target.value)}
+              placeholder="Digite o nome completo"
+              maxLength={150}
+              required
+              disabled={criandoConvite}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '13px'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label
+              htmlFor="cpf-convite"
+              style={{
+                display: 'block',
+                marginBottom: '7px',
+                color: '#333',
+                fontSize: '12px',
+                fontWeight: 700
+              }}
+            >
+              CPF
+            </label>
+
+            <input
+              id="cpf-convite"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={cpfConvite}
+              onChange={(event) => {
+                const numeros = event.target.value
+                  .replace(/\D/g, '')
+                  .slice(0, 11)
+
+                const formatado = numeros
+                  .replace(/^(\d{3})(\d)/, '$1.$2')
+                  .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+                  .replace(/\.(\d{3})(\d)/, '.$1-$2')
+
+                setCpfConvite(formatado)
+              }}
+              placeholder="000.000.000-00"
+              required
+              disabled={criandoConvite}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '13px'
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              marginBottom: '16px',
+              padding: '11px',
+              background: '#fff9df',
+              borderRadius: '8px',
+              color: '#665300',
+              fontSize: '11px',
+              lineHeight: 1.6
+            }}
+          >
+            O apartamento será vinculado automaticamente ao seu cadastro.
+            O convite será criado como autorizado, sem precisar de uma nova
+            aprovação.
+          </div>
+
+          <button
+            type="submit"
+            disabled={criandoConvite}
+            style={{
+              width: '100%',
+              padding: '11px',
+              color: '#171717',
+              background: '#ffd000',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '13px',
+              cursor: criandoConvite ? 'wait' : 'pointer',
+              opacity: criandoConvite ? 0.6 : 1
+            }}
+          >
+            {criandoConvite ? 'Gerando convite...' : 'Gerar convite autorizado'}
+          </button>
+        </form>
+
+        {conviteGerado && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              boxSizing: 'border-box',
+              marginTop: '16px',
+              padding: '16px',
+              background: '#fff',
+              border: '1px solid #e9e9e3',
+              borderRadius: '11px'
+            }}
+          >
+            <h3
+              style={{
+                margin: '0 0 13px',
+                color: '#171717',
+                fontSize: '18px',
+                fontWeight: 750
+              }}
+            >
+              Convite gerado com sucesso!
+            </h3>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: '7px',
+                color: '#333',
+                fontSize: '12px',
+                lineHeight: 1.5
+              }}
+            >
+              <p style={{ margin: 0 }}>
+                <strong>Nome:</strong> {conviteGerado.nome}
+              </p>
+
+              <p style={{ margin: 0 }}>
+                <strong>Tipo:</strong> {formatarTipoPessoa(conviteGerado.tipo)}
+              </p>
+
+              {conviteGerado.apartamento && (
+                <p style={{ margin: 0 }}>
+                  <strong>Apartamento:</strong>{' '}
+                  {conviteGerado.apartamento.bloco
+                    ? `Bloco ${conviteGerado.apartamento.bloco} - `
+                    : ''}
+                  {conviteGerado.apartamento.numero}
+                </p>
+              )}
+
+              {conviteGerado.validade && (
+                <p style={{ margin: 0 }}>
+                  <strong>Válido até:</strong>{' '}
+                  {formatarDataHora(conviteGerado.validade)}
+                </p>
+              )}
+            </div>
+
+            <div
+              style={{
+                margin: '13px 0',
+                padding: '12px',
+                background: '#fff9df',
+                borderRadius: '9px',
+                textAlign: 'center'
+              }}
+            >
+              <span
+                style={{
+                  display: 'block',
+                  marginBottom: '5px',
+                  color: '#665300',
+                  fontSize: '10px',
+                  fontWeight: 750,
+                  letterSpacing: '0.3px'
+                }}
+              >
+                CÓDIGO DE LIBERAÇÃO
+              </span>
+
+              <strong
+                style={{
+                  display: 'block',
+                  color: '#171717',
+                  fontSize: '24px',
+                  letterSpacing: '4px'
+                }}
+              >
+                {conviteGerado.codigo}
+              </strong>
+            </div>
+
+            <label
+              htmlFor="link-convite-gerado"
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontSize: '11px',
+                fontWeight: 750
+              }}
+            >
+              Link individual do convite
+            </label>
+
+            <input
+              id="link-convite-gerado"
+              type="text"
+              readOnly
+              value={conviteGerado.link}
+              onFocus={(event) => event.target.select()}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '9px',
+                border: '1px solid #ddd',
+                borderRadius: '7px',
+                fontSize: '10px',
+                color: '#555'
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={copiarLinkConvite}
+              disabled={copiandoLinkConvite}
+              style={{
+                width: '100%',
+                marginTop: '9px',
+                padding: '11px',
+                color: linkConviteCopiado ? '#176b37' : '#fff',
+                background: linkConviteCopiado ? '#e7f5eb' : '#171717',
+                border: linkConviteCopiado
+                  ? '1px solid #cde8d4'
+                  : '1px solid #171717',
+                borderRadius: '8px',
+                fontWeight: 750,
+                fontSize: '12px',
+                cursor: copiandoLinkConvite ? 'wait' : 'pointer',
+                opacity: copiandoLinkConvite ? 0.6 : 1
+              }}
+            >
+              {copiandoLinkConvite
+                ? 'Copiando...'
+                : linkConviteCopiado
+                  ? '✓ Link copiado!'
+                  : 'Copiar link do convite'}
+            </button>
+
+            <p
+              style={{
+                margin: '9px 0 0',
+                color: '#777',
+                fontSize: '10px',
+                lineHeight: 1.5
+              }}
+            >
+              Envie o link ao convidado pelo WhatsApp ou outro aplicativo.
+              Ele poderá consultar os dados do convite e apresentar o código
+              de liberação na entrada.
+            </p>
+          </div>
+        )}
+      </section>
+    )
   }
 
   function renderizarIndicadores() {
@@ -1607,6 +2057,8 @@ function Morador() {
 
               {renderizarIndicadores()}
             </>
+          ) : secaoAtiva === 'convite' ? (
+            renderizarConvite()
           ) : secaoAtiva === 'autorizacoes' ? (
             <section className="morador-autorizacoes">
               <div className="morador-section-heading">

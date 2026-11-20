@@ -9,6 +9,7 @@ const {
 
 const {
     criarSolicitacaoPublica,
+    criarConviteMorador,
     consultarSolicitacaoPublica,
     listarSolicitacoesMorador,
     responderSolicitacaoMorador
@@ -25,6 +26,13 @@ router.post('/solicitacoes', criarSolicitacaoPublica);
 router.get(
     '/solicitacoes/publica/:token',
     consultarSolicitacaoPublica
+);
+
+// Cria convite de acesso autorizado pelo morador.
+router.post(
+    '/convites',
+    authMiddleware,
+    criarConviteMorador
 );
 
 // Lista solicitações do morador autenticado.
