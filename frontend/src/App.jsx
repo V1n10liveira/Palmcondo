@@ -7,6 +7,7 @@ import Visitante from './pages/Visitante'
 import Login from './pages/Login'
 import Painel from './pages/Painel'
 import Morador from './pages/Morador'
+import Moradores from './pages/Moradores'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -42,6 +43,11 @@ function App() {
           <Route
             path="/painel"
             element={<Painel />}
+          />
+
+          <Route
+            path="/painel/moradores"
+            element={<Moradores />}
           />
         </Route>
 

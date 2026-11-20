@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import './Painel.css'
 
@@ -197,10 +197,15 @@ function Painel() {
         </div>
 
         <nav className="painel-navigation">
-          <div className="painel-nav-item active">
+          <Link to="/painel" className="painel-nav-item active">
             <span>▦</span>
             Visão geral
-          </div>
+          </Link>
+
+          <Link to="/painel/moradores" className="painel-nav-item">
+            <span>♟</span>
+            Gestão de moradores
+          </Link>
         </nav>
       </aside>
 

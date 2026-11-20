@@ -1,0 +1,680 @@
+
+/* =========================================
+   PALMCONDO - GESTÃO DE MORADORES
+========================================= */
+
+.moradores-content {
+  width: 100%;
+  max-width: 1350px;
+  flex: 1;
+  margin: 0 auto;
+  padding: 40px 5%;
+}
+
+.moradores-welcome {
+  margin-bottom: 25px;
+  padding: 32px;
+  background: #fff;
+  border: 1px solid #eaeae5;
+  border-radius: 14px;
+}
+
+.moradores-eyebrow {
+  color: #987400;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.5px;
+}
+
+.moradores-welcome h2 {
+  margin: 12px 0 8px;
+  color: #171717;
+  font-size: 29px;
+  font-weight: 850;
+  letter-spacing: -0.7px;
+}
+
+.moradores-welcome p {
+  margin: 0;
+  color: #737373;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* =========================================
+   CARDS E TÍTULOS
+========================================= */
+
+.moradores-form-card,
+.moradores-list-card {
+  margin-bottom: 25px;
+  padding: 27px;
+  background: #fff;
+  border: 1px solid #eaeae5;
+  border-radius: 13px;
+}
+
+.moradores-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 23px;
+}
+
+.moradores-section-heading h2 {
+  margin: 0 0 7px;
+  color: #222;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.moradores-section-heading p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* =========================================
+   FORMULÁRIO
+========================================= */
+
+.moradores-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px;
+}
+
+.moradores-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.moradores-field-full {
+  grid-column: 1 / -1;
+}
+
+.moradores-field label {
+  color: #333;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.moradores-field input,
+.moradores-field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #292929;
+  background: #fff;
+  border: 1px solid #deded8;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.moradores-field input::placeholder {
+  color: #aaa;
+}
+
+.moradores-field input:focus,
+.moradores-field select:focus {
+  border-color: #d4ad00;
+  box-shadow: 0 0 0 3px rgba(255, 208, 0, 0.16);
+}
+
+/* =========================================
+   CAMPOS BLOQUEADOS - SOMENTE LEITURA
+========================================= */
+
+.moradores-field input[readonly] {
+  color: #777;
+  background: #f0f0ed;
+  border-color: #deded8;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.moradores-field input[readonly]:focus {
+  border-color: #deded8;
+  box-shadow: none;
+  outline: none;
+}
+
+.moradores-field small {
+  color: #858585;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.moradores-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eeeeea;
+}
+
+/* =========================================
+   BOTÕES
+========================================= */
+
+.moradores-button-primary,
+.moradores-button-secondary {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.moradores-button-primary {
+  color: #171717;
+  background: #ffd000;
+  border: 0;
+}
+
+.moradores-button-primary:hover:not(:disabled) {
+  background: #efc300;
+}
+
+.moradores-button-secondary {
+  color: #333;
+  background: #f7f7f5;
+  border: 1px solid #eaeae5;
+}
+
+.moradores-button-secondary:hover:not(:disabled) {
+  background: #eeeeea;
+}
+
+.moradores-button-primary:active:not(:disabled),
+.moradores-button-secondary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.moradores-button-primary:disabled,
+.moradores-button-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   MENSAGENS
+========================================= */
+
+.moradores-alerta {
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.moradores-alerta.erro {
+  color: #a12d2d;
+  background: #fff1ef;
+  border: 1px solid #f0d0d0;
+}
+
+.moradores-alerta.sucesso {
+  color: #176b37;
+  background: #eaf6ed;
+  border: 1px solid #cce8d2;
+}
+
+/* =========================================
+   PESQUISA
+========================================= */
+
+.moradores-search {
+  margin-bottom: 20px;
+}
+
+.moradores-search input {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 14px;
+  color: #292929;
+  background: #fff;
+  border: 1px solid #e2e2dc;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.moradores-search input:focus {
+  border-color: #d4ad00;
+  box-shadow: 0 0 0 3px rgba(255, 208, 0, 0.15);
+}
+
+/* =========================================
+   TABELA
+========================================= */
+
+.moradores-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.moradores-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.moradores-table th {
+  padding: 13px 15px;
+  color: #777;
+  background: #f8f8f6;
+  border-bottom: 1px solid #eaeae5;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.moradores-table td {
+  padding: 16px 15px;
+  color: #555;
+  border-bottom: 1px solid #eeeeea;
+  font-size: 12px;
+}
+
+.moradores-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.moradores-table tbody tr:hover {
+  background: #fdfcf7;
+}
+
+.moradores-table td strong {
+  color: #252525;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.moradores-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.moradores-status.ativo {
+  color: #176b37;
+  background: #e7f5eb;
+}
+
+.moradores-status.inativo {
+  color: #a12d2d;
+  background: #ffebeb;
+}
+
+.moradores-empty {
+  padding: 35px 15px;
+  color: #858585;
+  background: #fafaf8;
+  border: 1px dashed #e3e3dc;
+  border-radius: 9px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.moradores-total {
+  margin-top: 17px;
+  color: #888;
+  font-size: 10px;
+  text-align: right;
+}
+
+/* =========================================
+   CALENDÁRIO PERSONALIZADO - PALMCONDO
+========================================= */
+
+.moradores-calendario-container {
+  position: relative;
+  width: 100%;
+}
+
+.moradores-calendario-campo {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #292929;
+  background: #fff;
+  border: 1px solid #deded8;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.moradores-calendario-campo:hover,
+.moradores-calendario-campo.aberto {
+  border-color: #d4ad00;
+}
+
+.moradores-calendario-campo:focus-visible {
+  outline: none;
+  border-color: #d4ad00;
+  box-shadow: 0 0 0 3px rgba(255, 208, 0, 0.16);
+}
+
+.moradores-calendario-campo svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  color: #777;
+}
+
+.moradores-calendario-placeholder {
+  color: #aaa;
+}
+
+.moradores-calendario-valor {
+  color: #292929;
+  font-weight: 650;
+}
+
+.moradores-calendario {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 100;
+  width: 320px;
+  max-width: min(320px, calc(100vw - 40px));
+  padding: 19px;
+  background: #fff;
+  border: 1px solid #eaeae5;
+  border-radius: 15px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.13);
+  animation: moradores-calendario-entrada 0.18s ease-out;
+}
+
+@keyframes moradores-calendario-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.moradores-calendario-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 19px;
+}
+
+.moradores-calendario-topo > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.moradores-calendario-legenda {
+  color: #987400;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 1.2px;
+}
+
+.moradores-calendario-topo strong {
+  color: #171717;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.moradores-calendario-navegacao {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.moradores-calendario-navegacao button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+  background: #f7f7f5;
+  border: 1px solid #eeeeea;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.moradores-calendario-navegacao button:hover {
+  color: #171717;
+  background: #fff2b8;
+  border-color: #f0d65b;
+}
+
+.moradores-calendario-navegacao svg {
+  width: 17px;
+  height: 17px;
+}
+
+.moradores-calendario-grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.moradores-calendario-dia-semana {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 29px;
+  color: #929292;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.moradores-calendario-vazio {
+  height: 34px;
+}
+
+.moradores-calendario-dia {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #393939;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.moradores-calendario-dia:hover {
+  background: #fff5c9;
+  border-color: #f4df83;
+}
+
+.moradores-calendario-dia.hoje:not(.selecionado) {
+  color: #987400;
+  border-color: #e5c94c;
+  font-weight: 800;
+}
+
+.moradores-calendario-dia.selecionado {
+  color: #171717;
+  background: #ffd000;
+  border-color: #ffd000;
+  font-weight: 850;
+}
+
+.moradores-calendario-dia.selecionado:hover {
+  background: #efc300;
+}
+
+.moradores-calendario-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid #eeeeea;
+}
+
+.moradores-calendario-limpar,
+.moradores-calendario-hoje {
+  padding: 7px 10px;
+  color: #666;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.moradores-calendario-limpar:hover {
+  color: #a12d2d;
+  background: #fff1ef;
+}
+
+.moradores-calendario-hoje {
+  color: #725800;
+}
+
+.moradores-calendario-hoje:hover {
+  color: #171717;
+  background: #fff2b8;
+}
+
+/* =========================================
+   RESPONSIVIDADE
+========================================= */
+
+@media (max-width: 900px) {
+  .moradores-content {
+    padding-right: 4%;
+    padding-left: 4%;
+  }
+}
+
+@media (max-width: 600px) {
+  .moradores-content {
+    padding: 24px 15px;
+  }
+
+  .moradores-welcome {
+    padding: 23px;
+  }
+
+  .moradores-welcome h2 {
+    font-size: 25px;
+  }
+
+  .moradores-form-card,
+  .moradores-list-card {
+    padding: 19px;
+  }
+
+  .moradores-section-heading {
+    align-items: flex-start;
+  }
+
+  .moradores-section-heading h2 {
+    font-size: 16px;
+  }
+
+  .moradores-section-heading p {
+    font-size: 11px;
+  }
+
+  .moradores-form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .moradores-field-full {
+    grid-column: auto;
+  }
+
+  .moradores-form-actions {
+    justify-content: stretch;
+  }
+
+  .moradores-button-primary {
+    width: 100%;
+  }
+
+  .moradores-table {
+    min-width: 500px;
+  }
+
+  .moradores-calendario {
+    width: 310px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .moradores-content {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .moradores-welcome {
+    padding: 19px;
+  }
+
+  .moradores-form-card,
+  .moradores-list-card {
+    padding: 15px;
+  }
+
+  .moradores-section-heading {
+    flex-direction: column;
+  }
+}

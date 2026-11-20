@@ -1,4 +1,5 @@
 
+const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
 
 // Valida e converte IDs positivos para BigInt
@@ -128,6 +129,8 @@ async function consultarMeusDados(req, res) {
 }
 
 // Lista os moradores do condomínio
+// Ordenação: ativos primeiro e, dentro de cada situação,
+// os cadastros atualizados mais recentemente primeiro.
 async function listarMoradores(req, res) {
     try {
         const condominioId = converterId(req.user.condominio_id);
@@ -149,6 +152,9 @@ async function listarMoradores(req, res) {
                     select: {
                         id: true,
                         nome: true,
+                        email: true,
+                        cpf: true,
+                        telefone: true,
                         tipo_usuario: true,
                         ativo: true
                     }
@@ -164,13 +170,21 @@ async function listarMoradores(req, res) {
                     }
                 }
             },
-            orderBy: {
-                id: 'asc'
-            }
+            orderBy: [
+                {
+                    ativo: 'desc'
+                },
+                {
+                    updated_at: 'desc'
+                },
+                {
+                    id: 'desc'
+                }
+            ]
         });
 
         const resultado = moradores.map(morador =>
-            formatarMorador(morador)
+            formatarMorador(morador, true)
         );
 
         return res.json({
@@ -251,28 +265,64 @@ async function buscarMorador(req, res) {
     }
 }
 
-// Cadastra um morador
+// Cadastra um morador e sua conta de acesso em uma única transação
 async function criarMorador(req, res) {
     try {
         const {
-            usuario_id,
+            nome,
+            email,
+            cpf,
+            telefone,
+            senha,
             apartamento_id,
             data_entrada
         } = req.body;
 
-        if (!usuario_id || !apartamento_id) {
+        if (
+            !nome ||
+            !email ||
+            !cpf ||
+            !senha ||
+            !apartamento_id
+        ) {
             return res.status(400).json({
-                erro: 'Usuário e apartamento são obrigatórios.'
+                erro: 'Nome, e-mail, CPF, senha e apartamento são obrigatórios.'
             });
         }
 
-        const usuarioId = converterId(usuario_id);
+        if (
+            typeof nome !== 'string' ||
+            typeof email !== 'string' ||
+            typeof cpf !== 'string' ||
+            typeof senha !== 'string'
+        ) {
+            return res.status(400).json({
+                erro: 'Os dados informados possuem formato inválido.'
+            });
+        }
+
+        if (senha.length < 8) {
+            return res.status(400).json({
+                erro: 'A senha precisa ter pelo menos 8 caracteres.'
+            });
+        }
+
+        const nomeFormatado = nome.trim();
+        const emailFormatado = email.trim();
+        const cpfFormatado = cpf.trim();
+
+        if (!nomeFormatado || !emailFormatado || !cpfFormatado) {
+            return res.status(400).json({
+                erro: 'Nome, e-mail e CPF não podem ficar vazios.'
+            });
+        }
+
         const apartamentoId = converterId(apartamento_id);
         const condominioId = converterId(req.user.condominio_id);
 
-        if (!usuarioId || !apartamentoId || !condominioId) {
+        if (!apartamentoId || !condominioId) {
             return res.status(400).json({
-                erro: 'Um ou mais IDs informados são inválidos.'
+                erro: 'ID do apartamento ou condomínio inválido.'
             });
         }
 
@@ -286,96 +336,137 @@ async function criarMorador(req, res) {
             });
         }
 
-        const usuario = await prisma.usuarios.findFirst({
-            where: {
-                id: usuarioId,
-                condominio_id: condominioId
-            }
-        });
+        const senhaHash = await bcrypt.hash(senha, 10);
 
-        if (!usuario) {
-            return res.status(404).json({
-                erro: 'Usuário não encontrado neste condomínio.'
+        const morador = await prisma.$transaction(async (tx) => {
+
+            const usuarioExistente = await tx.usuarios.findFirst({
+                where: {
+                    OR: [
+                        { email: emailFormatado },
+                        { cpf: cpfFormatado }
+                    ]
+                }
             });
-        }
 
-        if (usuario.tipo_usuario !== 'MORADOR') {
-            return res.status(400).json({
-                erro: 'O usuário informado não possui o tipo MORADOR.'
-            });
-        }
+            if (usuarioExistente) {
+                if (usuarioExistente.email === emailFormatado) {
+                    const erro = new Error(
+                        'Já existe um usuário cadastrado com este e-mail.'
+                    );
+                    erro.code = 'EMAIL_DUPLICADO';
+                    throw erro;
+                }
 
-        if (!usuario.ativo) {
-            return res.status(400).json({
-                erro: 'O usuário informado está inativo.'
-            });
-        }
-
-        const moradorExistente = await prisma.moradores.findUnique({
-            where: {
-                usuario_id: usuarioId
-            }
-        });
-
-        if (moradorExistente) {
-            return res.status(400).json({
-                erro: 'Este usuário já está cadastrado como morador.'
-            });
-        }
-
-        const apartamento = await prisma.apartamentos.findFirst({
-            where: {
-                id: apartamentoId,
-                condominio_id: condominioId
-            }
-        });
-
-        if (!apartamento) {
-            return res.status(404).json({
-                erro: 'Apartamento não encontrado neste condomínio.'
-            });
-        }
-
-        if (!apartamento.ativo) {
-            return res.status(400).json({
-                erro: 'O apartamento informado está inativo.'
-            });
-        }
-
-        const morador = await prisma.moradores.create({
-            data: {
-                usuario_id: usuarioId,
-                apartamento_id: apartamentoId,
-                data_entrada: dataEntrada.data
-            },
-            include: {
-                usuarios: {
-                    select: {
-                        id: true,
-                        nome: true,
-                        tipo_usuario: true,
-                        ativo: true
-                    }
-                },
-                apartamentos: {
-                    select: {
-                        id: true,
-                        bloco: true,
-                        numero: true,
-                        andar: true,
-                        descricao: true,
-                        ativo: true
-                    }
+                if (usuarioExistente.cpf === cpfFormatado) {
+                    const erro = new Error(
+                        'Já existe um usuário cadastrado com este CPF.'
+                    );
+                    erro.code = 'CPF_DUPLICADO';
+                    throw erro;
                 }
             }
+
+            const apartamento = await tx.apartamentos.findFirst({
+                where: {
+                    id: apartamentoId,
+                    condominio_id: condominioId
+                }
+            });
+
+            if (!apartamento) {
+                const erro = new Error(
+                    'Apartamento não encontrado neste condomínio.'
+                );
+                erro.code = 'APARTAMENTO_NAO_ENCONTRADO';
+                throw erro;
+            }
+
+            if (!apartamento.ativo) {
+                const erro = new Error(
+                    'O apartamento informado está inativo.'
+                );
+                erro.code = 'APARTAMENTO_INATIVO';
+                throw erro;
+            }
+
+            const usuario = await tx.usuarios.create({
+                data: {
+                    condominio_id: condominioId,
+                    nome: nomeFormatado,
+                    email: emailFormatado,
+                    senha_hash: senhaHash,
+                    cpf: cpfFormatado,
+                    telefone: telefone || null,
+                    tipo_usuario: 'MORADOR',
+                    ativo: true
+                }
+            });
+
+            const novoMorador = await tx.moradores.create({
+                data: {
+                    usuario_id: usuario.id,
+                    apartamento_id: apartamentoId,
+                    data_entrada: dataEntrada.data
+                },
+                include: {
+                    usuarios: {
+                        select: {
+                            id: true,
+                            nome: true,
+                            tipo_usuario: true,
+                            ativo: true
+                        }
+                    },
+                    apartamentos: {
+                        select: {
+                            id: true,
+                            bloco: true,
+                            numero: true,
+                            andar: true,
+                            descricao: true,
+                            ativo: true
+                        }
+                    }
+                }
+            });
+
+            return novoMorador;
         });
 
         return res.status(201).json({
-            mensagem: 'Morador cadastrado com sucesso.',
+            mensagem: 'Morador e conta de acesso cadastrados com sucesso.',
             morador: formatarMorador(morador)
         });
 
     } catch (error) {
+        if (
+            error.code === 'EMAIL_DUPLICADO' ||
+            error.code === 'CPF_DUPLICADO'
+        ) {
+            return res.status(400).json({
+                erro: error.message
+            });
+        }
+
+        if (error.code === 'APARTAMENTO_NAO_ENCONTRADO') {
+            return res.status(404).json({
+                erro: error.message
+            });
+        }
+
+        if (error.code === 'APARTAMENTO_INATIVO') {
+            return res.status(400).json({
+                erro: error.message
+            });
+        }
+
+        if (error.code === 'P2002') {
+            return res.status(400).json({
+                erro: 'Já existe um cadastro com um dos dados informados.'
+            });
+        }
+
         console.error('ERRO AO CADASTRAR MORADOR:', error);
 
         return res.status(500).json({
@@ -384,7 +475,8 @@ async function criarMorador(req, res) {
     }
 }
 
-// Atualiza um morador e sincroniza o status da conta de usuário
+// Atualiza os dados pessoais, apartamento e datas do morador
+// O CPF é permanente e não pode ser alterado após o cadastro.
 async function atualizarMorador(req, res) {
     try {
         const id = converterId(req.params.id);
@@ -403,6 +495,10 @@ async function atualizarMorador(req, res) {
         }
 
         const {
+            nome,
+            email,
+            cpf,
+            telefone,
             apartamento_id,
             data_entrada,
             data_saida,
@@ -415,6 +511,14 @@ async function atualizarMorador(req, res) {
                 apartamentos: {
                     condominio_id: condominioId
                 }
+            },
+            include: {
+                usuarios: {
+                    select: {
+                        id: true,
+                        cpf: true
+                    }
+                }
             }
         });
 
@@ -424,7 +528,54 @@ async function atualizarMorador(req, res) {
             });
         }
 
+        // Impede qualquer alteração do CPF pela API.
+        // Se o campo for enviado, deve ser exatamente igual ao cadastrado.
+        if (cpf !== undefined) {
+            if (
+                typeof cpf !== 'string' ||
+                cpf.trim() !== morador.usuarios.cpf
+            ) {
+                return res.status(400).json({
+                    erro: 'O CPF não pode ser alterado após o cadastro.'
+                });
+            }
+        }
+
+        const dadosUsuario = {};
         const dadosAtualizacao = {};
+
+        if (nome !== undefined) {
+            if (typeof nome !== 'string' || !nome.trim()) {
+                return res.status(400).json({
+                    erro: 'O nome informado é inválido.'
+                });
+            }
+
+            dadosUsuario.nome = nome.trim();
+        }
+
+        if (email !== undefined) {
+            if (typeof email !== 'string' || !email.trim()) {
+                return res.status(400).json({
+                    erro: 'O e-mail informado é inválido.'
+                });
+            }
+
+            dadosUsuario.email = email.trim();
+        }
+
+        if (telefone !== undefined) {
+            if (
+                telefone !== null &&
+                typeof telefone !== 'string'
+            ) {
+                return res.status(400).json({
+                    erro: 'O telefone informado é inválido.'
+                });
+            }
+
+            dadosUsuario.telefone = telefone ? telefone.trim() : null;
+        }
 
         if (apartamento_id !== undefined) {
             const apartamentoId = converterId(apartamento_id);
@@ -491,16 +642,62 @@ async function atualizarMorador(req, res) {
             dadosAtualizacao.ativo = ativo;
         }
 
-        if (Object.keys(dadosAtualizacao).length === 0) {
+        if (
+            Object.keys(dadosUsuario).length === 0 &&
+            Object.keys(dadosAtualizacao).length === 0
+        ) {
             return res.status(400).json({
                 erro: 'Informe pelo menos um campo para atualizar.'
             });
         }
 
-        // Atualiza o morador e, quando necessário, sua conta
-        // dentro de uma única transação.
+        // Atualiza a data do cadastro sempre que houver uma edição,
+        // inclusive quando somente os dados da conta forem alterados.
+        dadosAtualizacao.updated_at = new Date();
+
         const moradorAtualizado = await prisma.$transaction(async (tx) => {
 
+            // Verifica se o novo e-mail já pertence a outro usuário.
+            if (dadosUsuario.email !== undefined) {
+                const usuarioExistente = await tx.usuarios.findFirst({
+                    where: {
+                        id: {
+                            not: morador.usuario_id
+                        },
+                        email: dadosUsuario.email
+                    }
+                });
+
+                if (usuarioExistente) {
+                    const erro = new Error(
+                        'Já existe um usuário cadastrado com este e-mail.'
+                    );
+                    erro.code = 'EMAIL_DUPLICADO';
+                    throw erro;
+                }
+            }
+
+            // Atualiza os dados da conta vinculada ao morador.
+            if (Object.keys(dadosUsuario).length > 0) {
+                const resultadoUsuario = await tx.usuarios.updateMany({
+                    where: {
+                        id: morador.usuario_id,
+                        condominio_id: condominioId,
+                        tipo_usuario: 'MORADOR'
+                    },
+                    data: dadosUsuario
+                });
+
+                if (resultadoUsuario.count !== 1) {
+                    const erro = new Error(
+                        'Conta do usuário não encontrada ou vínculo alterado.'
+                    );
+                    erro.code = 'USUARIO_UPDATE_CONFLICT';
+                    throw erro;
+                }
+            }
+
+            // Atualiza o cadastro do morador e sua data de atualização.
             const resultadoAtualizacao = await tx.moradores.updateMany({
                 where: {
                     id: id,
@@ -514,12 +711,14 @@ async function atualizarMorador(req, res) {
             });
 
             if (resultadoAtualizacao.count !== 1) {
-                const erro = new Error('Morador não encontrado ou vínculo alterado.');
+                const erro = new Error(
+                    'Morador não encontrado ou vínculo alterado.'
+                );
                 erro.code = 'MORADOR_UPDATE_CONFLICT';
                 throw erro;
             }
 
-            // Sincroniza a conta somente quando o campo ativo foi informado.
+            // Sincroniza a situação da conta quando o status for alterado.
             if (ativo !== undefined) {
                 const resultadoUsuario = await tx.usuarios.updateMany({
                     where: {
@@ -533,15 +732,18 @@ async function atualizarMorador(req, res) {
                 });
 
                 if (resultadoUsuario.count !== 1) {
-                    const erro = new Error('Conta do usuário não encontrada ou vínculo alterado.');
+                    const erro = new Error(
+                        'Conta do usuário não encontrada ou vínculo alterado.'
+                    );
                     erro.code = 'USUARIO_UPDATE_CONFLICT';
                     throw erro;
                 }
             }
 
-            const apartamentoFinalId = dadosAtualizacao.apartamento_id !== undefined
-                ? dadosAtualizacao.apartamento_id
-                : morador.apartamento_id;
+            const apartamentoFinalId =
+                dadosAtualizacao.apartamento_id !== undefined
+                    ? dadosAtualizacao.apartamento_id
+                    : morador.apartamento_id;
 
             const registroAtualizado = await tx.moradores.findFirst({
                 where: {
@@ -557,6 +759,9 @@ async function atualizarMorador(req, res) {
                         select: {
                             id: true,
                             nome: true,
+                            email: true,
+                            cpf: true,
+                            telefone: true,
                             tipo_usuario: true,
                             ativo: true
                         }
@@ -575,7 +780,9 @@ async function atualizarMorador(req, res) {
             });
 
             if (!registroAtualizado) {
-                const erro = new Error('Não foi possível confirmar a atualização do morador.');
+                const erro = new Error(
+                    'Não foi possível confirmar a atualização do morador.'
+                );
                 erro.code = 'MORADOR_UPDATE_CONFLICT';
                 throw erro;
             }
@@ -585,16 +792,28 @@ async function atualizarMorador(req, res) {
 
         return res.json({
             mensagem: 'Morador atualizado com sucesso.',
-            morador: formatarMorador(moradorAtualizado)
+            morador: formatarMorador(moradorAtualizado, true)
         });
 
     } catch (error) {
+        if (error.code === 'EMAIL_DUPLICADO') {
+            return res.status(400).json({
+                erro: error.message
+            });
+        }
+
         if (
             error.code === 'MORADOR_UPDATE_CONFLICT' ||
             error.code === 'USUARIO_UPDATE_CONFLICT'
         ) {
             return res.status(409).json({
                 erro: 'O morador não pôde ser atualizado. Verifique se o cadastro e o vínculo com o condomínio continuam válidos.'
+            });
+        }
+
+        if (error.code === 'P2002') {
+            return res.status(400).json({
+                erro: 'Já existe um cadastro com um dos dados informados.'
             });
         }
 
@@ -639,8 +858,6 @@ async function excluirMorador(req, res) {
             });
         }
 
-        // Executa as duas desativações em uma única transação.
-        // Qualquer divergência provoca rollback das duas operações.
         const moradorAtualizado = await prisma.$transaction(async (tx) => {
 
             const resultadoMorador = await tx.moradores.updateMany({
@@ -654,12 +871,15 @@ async function excluirMorador(req, res) {
                 },
                 data: {
                     ativo: false,
-                    data_saida: new Date()
+                    data_saida: new Date(),
+                    updated_at: new Date()
                 }
             });
 
             if (resultadoMorador.count !== 1) {
-                const erro = new Error('Morador não encontrado ou vínculo alterado.');
+                const erro = new Error(
+                    'Morador não encontrado ou vínculo alterado.'
+                );
                 erro.code = 'MORADOR_UPDATE_CONFLICT';
                 throw erro;
             }
@@ -676,7 +896,9 @@ async function excluirMorador(req, res) {
             });
 
             if (resultadoUsuario.count !== 1) {
-                const erro = new Error('Conta do usuário não encontrada ou vínculo alterado.');
+                const erro = new Error(
+                    'Conta do usuário não encontrada ou vínculo alterado.'
+                );
                 erro.code = 'USUARIO_UPDATE_CONFLICT';
                 throw erro;
             }
@@ -693,7 +915,9 @@ async function excluirMorador(req, res) {
             });
 
             if (!registroAtualizado) {
-                const erro = new Error('Não foi possível confirmar a desativação do morador.');
+                const erro = new Error(
+                    'Não foi possível confirmar a desativação do morador.'
+                );
                 erro.code = 'MORADOR_UPDATE_CONFLICT';
                 throw erro;
             }
