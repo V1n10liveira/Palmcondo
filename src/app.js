@@ -11,6 +11,7 @@ const moradoresRoutes = require('./routes/moradores.routes');
 const autorizacoesRoutes = require('./routes/autorizacoes.routes');
 const prestadoresRoutes = require('./routes/prestadores.routes');
 const visitantesRoutes = require('./routes/visitantes.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 
 const app = express();
 
@@ -33,5 +34,6 @@ app.use('/moradores', moradoresRoutes);
 app.use('/autorizacoes', autorizacoesRoutes);
 app.use('/prestadores', prestadoresRoutes);
 app.use('/visitantes', visitantesRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 module.exports = app;
