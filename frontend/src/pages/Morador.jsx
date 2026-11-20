@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import './Morador.css'
@@ -122,6 +122,12 @@ function Morador() {
   const navigate = useNavigate()
   const usuario = api.obterUsuario()
 
+  const audioContextRef = useRef(null)
+  const audioLiberadoRef = useRef(false)
+  const audioHabilitandoRef = useRef(false)
+  const idsNotificacoesRef = useRef(new Set())
+  const primeiraCargaNotificacoesRef = useRef(false)
+
   const [secaoAtiva, setSecaoAtiva] = useState('inicio')
 
   const [autorizacoes, setAutorizacoes] = useState([])
@@ -134,6 +140,13 @@ function Morador() {
   const [mensagemSolicitacao, setMensagemSolicitacao] = useState('')
   const [solicitacaoEmProcessamento, setSolicitacaoEmProcessamento] = useState(null)
 
+  const [notificacoes, setNotificacoes] = useState([])
+  const [totalNaoLidas, setTotalNaoLidas] = useState(0)
+  const [notificacoesAbertas, setNotificacoesAbertas] = useState(false)
+  const [erroNotificacoes, setErroNotificacoes] = useState('')
+  const [notificacaoEmProcessamento, setNotificacaoEmProcessamento] = useState(null)
+  const [marcandoTodasComoLidas, setMarcandoTodasComoLidas] = useState(false)
+
   const [filtroStatus, setFiltroStatus] = useState('TODOS')
   const [filtroDataInicial, setFiltroDataInicial] = useState('')
   const [filtroDataFinal, setFiltroDataFinal] = useState('')
@@ -141,6 +154,151 @@ function Morador() {
   const secaoAtual = secoes.find(
     (secao) => secao.id === secaoAtiva
   )
+
+  // Prepara o áudio na primeira interação do morador com a página.
+  // Não é necessário clicar no sino: qualquer clique, toque ou tecla serve.
+  async function habilitarSomNotificacoes() {
+    if (audioLiberadoRef.current || audioHabilitandoRef.current) {
+      return
+    }
+
+    audioHabilitandoRef.current = true
+
+    try {
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext
+
+      if (!AudioContextClass) {
+        return
+      }
+
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContextClass()
+      }
+
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
+      }
+
+      audioLiberadoRef.current =
+        audioContextRef.current.state === 'running'
+    } catch (error) {
+      console.warn('Não foi possível habilitar o som das notificações.', error)
+    } finally {
+      audioHabilitandoRef.current = false
+    }
+  }
+
+  // Libera o áudio por meio da primeira interação normal com a página.
+  useEffect(() => {
+    function aoInteragir() {
+      habilitarSomNotificacoes()
+    }
+
+    document.addEventListener('pointerdown', aoInteragir, true)
+    document.addEventListener('keydown', aoInteragir, true)
+    document.addEventListener('touchstart', aoInteragir, true)
+
+    return () => {
+      document.removeEventListener('pointerdown', aoInteragir, true)
+      document.removeEventListener('keydown', aoInteragir, true)
+      document.removeEventListener('touchstart', aoInteragir, true)
+    }
+  }, [])
+
+  // Emite um alerta sonoro de aproximadamente 5,5 segundos.
+  function tocarSomNotificacao() {
+    const audioContext = audioContextRef.current
+
+    if (!audioLiberadoRef.current || !audioContext) {
+      return
+    }
+
+    if (audioContext.state !== 'running') {
+      return
+    }
+
+    try {
+      const agora = audioContext.currentTime
+      const duracaoNota = 0.45
+      const volumeMaximo = 0.22
+      const frequencias = [880, 1046.5]
+
+      for (let ciclo = 0; ciclo < 5; ciclo++) {
+        frequencias.forEach((frequencia, indice) => {
+          const inicio =
+            agora + ciclo * 1.10 + indice * 0.55
+
+          const oscilador = audioContext.createOscillator()
+          const volume = audioContext.createGain()
+
+          oscilador.type = 'sine'
+          oscilador.frequency.setValueAtTime(
+            frequencia,
+            inicio
+          )
+
+          volume.gain.setValueAtTime(0.0001, inicio)
+          volume.gain.exponentialRampToValueAtTime(
+            volumeMaximo,
+            inicio + 0.04
+          )
+          volume.gain.setValueAtTime(
+            volumeMaximo,
+            inicio + duracaoNota - 0.08
+          )
+          volume.gain.exponentialRampToValueAtTime(
+            0.0001,
+            inicio + duracaoNota
+          )
+
+          oscilador.connect(volume)
+          volume.connect(audioContext.destination)
+
+          oscilador.start(inicio)
+          oscilador.stop(inicio + duracaoNota)
+        })
+      }
+    } catch (error) {
+      console.warn('Não foi possível reproduzir o som da notificação.', error)
+    }
+  }
+
+  // Atualiza a lista e identifica notificações que chegaram recentemente.
+  function atualizarEstadoNotificacoes(resposta, emitirSom = false) {
+    const lista = Array.isArray(resposta?.notificacoes)
+      ? resposta.notificacoes
+      : []
+
+    const novosIds = new Set(
+      lista.map((notificacao) => String(notificacao.id))
+    )
+
+    if (primeiraCargaNotificacoesRef.current) {
+      const chegouNotificacaoNova = lista.some(
+        (notificacao) =>
+          !idsNotificacoesRef.current.has(String(notificacao.id))
+      )
+
+      // Cada novo ID gera um alerta, independentemente das notificações
+      // anteriores estarem pendentes, lidas ou não lidas.
+      if (emitirSom && chegouNotificacaoNova) {
+        tocarSomNotificacao()
+      }
+    } else {
+      primeiraCargaNotificacoesRef.current = true
+    }
+
+    idsNotificacoesRef.current = novosIds
+
+    setNotificacoes(lista)
+
+    setTotalNaoLidas(
+      Number(resposta?.total_nao_lidas) || 0
+    )
+
+    setErroNotificacoes('')
+  }
 
   const carregarAutorizacoes = useCallback(async () => {
     setCarregandoAutorizacoes(true)
@@ -184,6 +342,51 @@ function Morador() {
     }
   }, [])
 
+  const carregarNotificacoes = useCallback(async () => {
+    try {
+      const resposta = await api.get('/notificacoes')
+
+      atualizarEstadoNotificacoes(resposta)
+    } catch (error) {
+      setErroNotificacoes(
+        error.message || 'Não foi possível carregar as notificações.'
+      )
+    }
+  }, [])
+
+  // Carrega as notificações e atualiza automaticamente a cada 15 segundos.
+  useEffect(() => {
+    let ativo = true
+
+    async function atualizarNotificacoes() {
+      try {
+        const resposta = await api.get('/notificacoes')
+
+        if (!ativo) return
+
+        atualizarEstadoNotificacoes(resposta, true)
+      } catch (error) {
+        if (!ativo) return
+
+        setErroNotificacoes(
+          error.message || 'Não foi possível carregar as notificações.'
+        )
+      }
+    }
+
+    atualizarNotificacoes()
+
+    const intervalo = window.setInterval(
+      atualizarNotificacoes,
+      15000
+    )
+
+    return () => {
+      ativo = false
+      window.clearInterval(intervalo)
+    }
+  }, [])
+
   useEffect(() => {
     if (secaoAtiva === 'inicio') {
       carregarAutorizacoes()
@@ -210,11 +413,76 @@ function Morador() {
 
   function handleLogout() {
     api.limparSessao()
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {})
+      audioContextRef.current = null
+    }
+
     navigate('/login', { replace: true })
   }
 
   function navegarPara(secao) {
     setSecaoAtiva(secao)
+  }
+
+  // Marca uma notificação específica como lida.
+  async function marcarNotificacaoComoLida(notificacao) {
+    if (notificacao.lida || notificacaoEmProcessamento !== null) {
+      return
+    }
+
+    setNotificacaoEmProcessamento(notificacao.id)
+    setErroNotificacoes('')
+
+    try {
+      await api.patch(`/notificacoes/${notificacao.id}/lida`)
+
+      setNotificacoes((atuais) =>
+        atuais.map((item) =>
+          item.id === notificacao.id
+            ? { ...item, lida: true }
+            : item
+        )
+      )
+
+      setTotalNaoLidas((total) => Math.max(0, total - 1))
+    } catch (error) {
+      setErroNotificacoes(
+        error.message || 'Não foi possível marcar a notificação como lida.'
+      )
+    } finally {
+      setNotificacaoEmProcessamento(null)
+    }
+  }
+
+  // Marca todas as notificações como lidas.
+  async function marcarTodasComoLidas() {
+    if (totalNaoLidas === 0 || marcandoTodasComoLidas) {
+      return
+    }
+
+    setMarcandoTodasComoLidas(true)
+    setErroNotificacoes('')
+
+    try {
+      await api.patch('/notificacoes/lidas/todas')
+
+      setNotificacoes((atuais) =>
+        atuais.map((notificacao) => ({
+          ...notificacao,
+          lida: true
+        }))
+      )
+
+      setTotalNaoLidas(0)
+    } catch (error) {
+      setErroNotificacoes(
+        error.message || 'Não foi possível atualizar as notificações.'
+      )
+    } finally {
+      setMarcandoTodasComoLidas(false)
+    }
   }
 
   async function responderSolicitacao(solicitacao, status) {
@@ -657,10 +925,10 @@ function Morador() {
     return (
       <>
         {mensagemSolicitacao && (
-  <div className="morador-feedback morador-feedback-sucesso">
-    <p>{mensagemSolicitacao}</p>
-  </div>
-)}
+          <div className="morador-feedback morador-feedback-sucesso">
+            <p>{mensagemSolicitacao}</p>
+          </div>
+        )}
 
         {erroSolicitacoes && (
           <div className="morador-feedback morador-feedback-erro">
@@ -868,6 +1136,344 @@ function Morador() {
     )
   }
 
+  function renderizarNotificacoes() {
+    return (
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setNotificacoesAbertas((abertas) => !abertas)
+            carregarNotificacoes()
+          }}
+          aria-label={`Notificações: ${totalNaoLidas} não lidas`}
+          aria-expanded={notificacoesAbertas}
+          title="Notificações"
+          style={{
+            position: 'relative',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#171717',
+            background: notificacoesAbertas ? '#fff5c7' : '#fff',
+            border: '1px solid #e5e5df',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            fontSize: '20px'
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M10 21h4"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          {totalNaoLidas > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-6px',
+                right: '-6px',
+                minWidth: '19px',
+                height: '19px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 5px',
+                color: '#171717',
+                background: '#ffd000',
+                border: '2px solid #fff',
+                borderRadius: '20px',
+                fontSize: '10px',
+                fontWeight: 850
+              }}
+            >
+              {totalNaoLidas > 99 ? '99+' : totalNaoLidas}
+            </span>
+          )}
+        </button>
+
+        {notificacoesAbertas && (
+          <div
+            style={{
+              position: 'absolute',
+              zIndex: 1000,
+              top: '49px',
+              right: 0,
+              width: 'min(360px, calc(100vw - 30px))',
+              maxHeight: '430px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              background: '#fff',
+              border: '1px solid #e9e9e3',
+              borderRadius: '12px',
+              boxShadow: '0 12px 35px rgba(0, 0, 0, 0.13)'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                padding: '16px',
+                borderBottom: '1px solid #eeeeea'
+              }}
+            >
+              <div>
+                <strong
+                  style={{
+                    display: 'block',
+                    color: '#171717',
+                    fontSize: '14px'
+                  }}
+                >
+                  Notificações
+                </strong>
+
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: '4px',
+                    color: '#777',
+                    fontSize: '11px'
+                  }}
+                >
+                  {totalNaoLidas} não lida(s)
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px'
+                }}
+              >
+                {totalNaoLidas > 0 && (
+                  <button
+                    type="button"
+                    onClick={marcarTodasComoLidas}
+                    disabled={marcandoTodasComoLidas}
+                    title="Marcar todas como lidas"
+                    style={{
+                      padding: '7px 9px',
+                      color: '#333',
+                      background: '#fff5c7',
+                      border: '1px solid #f0d45a',
+                      borderRadius: '7px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: marcandoTodasComoLidas ? 'wait' : 'pointer',
+                      opacity: marcandoTodasComoLidas ? 0.6 : 1
+                    }}
+                  >
+                    {marcandoTodasComoLidas
+                      ? 'Atualizando...'
+                      : 'Marcar todas como lidas'}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={carregarNotificacoes}
+                  title="Atualizar notificações"
+                  style={{
+                    padding: '7px 10px',
+                    color: '#333',
+                    background: '#f7f7f4',
+                    border: '1px solid #e9e9e3',
+                    borderRadius: '7px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ↻ Atualizar
+                </button>
+              </div>
+            </div>
+
+            {erroNotificacoes && (
+              <p
+                style={{
+                  margin: 0,
+                  padding: '12px 15px',
+                  color: '#a12d2d',
+                  fontSize: '11px'
+                }}
+              >
+                {erroNotificacoes}
+              </p>
+            )}
+
+            <div
+              style={{
+                overflowY: 'auto',
+                padding: '7px'
+              }}
+            >
+              {notificacoes.length === 0 ? (
+                <div
+                  style={{
+                    padding: '28px 15px',
+                    color: '#777',
+                    textAlign: 'center',
+                    fontSize: '12px'
+                  }}
+                >
+                  Nenhuma notificação encontrada.
+                </div>
+              ) : (
+                notificacoes.map((notificacao) => (
+                  <article
+                    key={notificacao.id}
+                    style={{
+                      padding: '13px',
+                      marginBottom: '5px',
+                      background: notificacao.lida ? '#fff' : '#fff9df',
+                      border: '1px solid',
+                      borderColor: notificacao.lida ? '#f0f0eb' : '#f2df91',
+                      borderRadius: '9px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        marginBottom: '6px'
+                      }}
+                    >
+                      <strong
+                        style={{
+                          color: '#242424',
+                          fontSize: '12px'
+                        }}
+                      >
+                        {notificacao.titulo}
+                      </strong>
+
+                      {!notificacao.lida && (
+                        <span
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            flexShrink: 0,
+                            background: '#d5a900',
+                            borderRadius: '50%'
+                          }}
+                          title="Não lida"
+                        />
+                      )}
+                    </div>
+
+                    <p
+                      style={{
+                        margin: '0 0 8px',
+                        color: '#555',
+                        fontSize: '11px',
+                        lineHeight: 1.6
+                      }}
+                    >
+                      {notificacao.mensagem}
+                    </p>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        flexWrap: 'wrap'
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: '#888',
+                          fontSize: '10px'
+                        }}
+                      >
+                        {formatarDataHora(notificacao.created_at)}
+                      </span>
+
+                      {!notificacao.lida && (
+                        <button
+                          type="button"
+                          onClick={() => marcarNotificacaoComoLida(notificacao)}
+                          disabled={
+                            notificacaoEmProcessamento === notificacao.id ||
+                            marcandoTodasComoLidas
+                          }
+                          style={{
+                            padding: '6px 9px',
+                            color: '#765c00',
+                            background: '#fff5c7',
+                            border: '1px solid #f0d45a',
+                            borderRadius: '6px',
+                            fontSize: '10px',
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            opacity:
+                              notificacaoEmProcessamento === notificacao.id ||
+                              marcandoTodasComoLidas
+                                ? 0.6
+                                : 1
+                          }}
+                        >
+                          {notificacaoEmProcessamento === notificacao.id
+                            ? 'Atualizando...'
+                            : 'Marcar como lida'}
+                        </button>
+                      )}
+
+                      {notificacao.lida && (
+                        <span
+                          style={{
+                            color: '#777',
+                            fontSize: '10px',
+                            fontWeight: 650
+                          }}
+                        >
+                          ✓ Lida
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <main className="morador-layout">
       <aside className="morador-sidebar">
@@ -926,6 +1532,8 @@ function Morador() {
           </div>
 
           <div className="morador-topbar-user">
+            {renderizarNotificacoes()}
+
             <div className="morador-avatar">
               {(usuario?.nome || 'M').charAt(0).toUpperCase()}
             </div>

@@ -254,7 +254,11 @@ async function criarSolicitacaoPublica(req, res) {
                 ativo: true,
                 moradores: {
                     some: {
-                        ativo: true
+                        ativo: true,
+                        usuarios: {
+                            ativo: true,
+                            tipo_usuario: 'MORADOR'
+                        }
                     }
                 }
             },
@@ -297,6 +301,54 @@ async function criarSolicitacaoPublica(req, res) {
                 data_hora_solicitacao: true
             }
         });
+
+        // Cria uma notificação individual para cada morador ativo.
+        // Uma falha nesta etapa não invalida a solicitação.
+        try {
+            const moradores = await prisma.moradores.findMany({
+                where: {
+                    apartamento_id: apartamento.id,
+                    ativo: true,
+                    apartamentos: {
+                        condominio_id: condominio.id,
+                        ativo: true
+                    },
+                    usuarios: {
+                        ativo: true,
+                        tipo_usuario: 'MORADOR',
+                        condominio_id: condominio.id
+                    }
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (moradores.length > 0) {
+                const tipoDescricao = tipoPessoaLimpo === 'VISITANTE'
+                    ? 'visitante'
+                    : 'prestador';
+
+                const identificacaoApartamento = apartamento.bloco
+                    ? `${apartamento.bloco}-${apartamento.numero}`
+                    : apartamento.numero;
+
+                await prisma.notificacoes.createMany({
+                    data: moradores.map((morador) => ({
+                        usuario_id: morador.usuario_id,
+                        titulo: 'Nova solicitação de acesso',
+                        mensagem: `${nomeLimpo} enviou uma solicitação de acesso como ${tipoDescricao} para o apartamento ${identificacaoApartamento}.`,
+                        tipo: 'SOLICITACAO_ACESSO',
+                        lida: false
+                    }))
+                });
+            }
+        } catch (erroNotificacao) {
+            console.error(
+                'ERRO AO CRIAR NOTIFICAÇÕES DA SOLICITAÇÃO:',
+                erroNotificacao
+            );
+        }
 
         return res.status(201).json({
             mensagem: 'Solicitação de acesso enviada com sucesso.',

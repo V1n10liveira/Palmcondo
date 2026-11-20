@@ -12,6 +12,7 @@ const autorizacoesRoutes = require('./routes/autorizacoes.routes');
 const prestadoresRoutes = require('./routes/prestadores.routes');
 const visitantesRoutes = require('./routes/visitantes.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const notificacoesRoutes = require('./routes/notificacoes.routes');
 
 const app = express();
 
@@ -35,5 +36,6 @@ app.use('/autorizacoes', autorizacoesRoutes);
 app.use('/prestadores', prestadoresRoutes);
 app.use('/visitantes', visitantesRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/notificacoes', notificacoesRoutes);
 
 module.exports = app;
