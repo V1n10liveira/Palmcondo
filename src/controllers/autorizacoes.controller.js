@@ -1,3 +1,4 @@
+
 const prisma = require('../lib/prisma');
 
 const TIPOS_PESSOA = ['VISITANTE', 'PRESTADOR'];
@@ -734,13 +735,36 @@ async function atualizarAutorizacao(req, res) {
             dadosAtualizacao.morador_id = morador.id;
         }
 
-        const atualizada = await prisma.autorizacoes.update({
+        // Reforça o escopo de acesso na própria operação de gravação.
+        // Também impede atualização caso o status tenha mudado
+        // para CANCELADA ou UTILIZADA após a consulta inicial.
+        const resultadoAtualizacao = await prisma.autorizacoes.updateMany({
             where: {
-                id
+                ...where,
+                status: {
+                    notIn: ['CANCELADA', 'UTILIZADA']
+                }
             },
-            data: dadosAtualizacao,
+            data: dadosAtualizacao
+        });
+
+        if (resultadoAtualizacao.count !== 1) {
+            return res.status(409).json({
+                erro: 'A autorização não pôde ser atualizada. Ela pode ter sido alterada ou não estar mais disponível.'
+            });
+        }
+
+        // Recupera a autorização atualizada com seus relacionamentos.
+        const atualizada = await prisma.autorizacoes.findFirst({
+            where,
             include: obterDadosRelacionados()
         });
+
+        if (!atualizada) {
+            return res.status(404).json({
+                erro: 'Autorização não encontrada após a atualização.'
+            });
+        }
 
         return res.status(200).json({
             mensagem: 'Autorização atualizada com sucesso.',
@@ -831,15 +855,38 @@ async function excluirAutorizacao(req, res) {
             });
         }
 
-        const cancelada = await prisma.autorizacoes.update({
+        // Repete o escopo de acesso na própria operação de gravação.
+        // Impede também o cancelamento se o status tiver mudado
+        // para CANCELADA ou UTILIZADA após a consulta inicial.
+        const resultadoCancelamento = await prisma.autorizacoes.updateMany({
             where: {
-                id
+                ...where,
+                status: {
+                    notIn: ['CANCELADA', 'UTILIZADA']
+                }
             },
             data: {
                 status: 'CANCELADA'
-            },
+            }
+        });
+
+        if (resultadoCancelamento.count !== 1) {
+            return res.status(409).json({
+                erro: 'A autorização não pôde ser cancelada. Ela pode ter sido alterada ou não estar mais disponível.'
+            });
+        }
+
+        // Recupera a autorização cancelada com seus relacionamentos.
+        const cancelada = await prisma.autorizacoes.findFirst({
+            where,
             include: obterDadosRelacionados()
         });
+
+        if (!cancelada) {
+            return res.status(404).json({
+                erro: 'Autorização não encontrada após o cancelamento.'
+            });
+        }
 
         return res.status(200).json({
             mensagem: 'Autorização cancelada com sucesso.',
