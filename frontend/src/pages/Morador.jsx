@@ -97,6 +97,27 @@ function formatarTipoPessoa(tipo) {
   return tipos[tipo] || tipo || 'Não informado'
 }
 
+function mascararCpf(cpf) {
+  if (!cpf) return 'Não informado'
+  return '***.***.***-**'
+}
+
+function obterDataISO(data) {
+  if (!data) return ''
+
+  const dataObj = new Date(data)
+
+  if (Number.isNaN(dataObj.getTime())) {
+    return ''
+  }
+
+  const ano = dataObj.getFullYear()
+  const mes = String(dataObj.getMonth() + 1).padStart(2, '0')
+  const dia = String(dataObj.getDate()).padStart(2, '0')
+
+  return `${ano}-${mes}-${dia}`
+}
+
 function Morador() {
   const navigate = useNavigate()
   const usuario = api.obterUsuario()
@@ -112,6 +133,10 @@ function Morador() {
   const [erroSolicitacoes, setErroSolicitacoes] = useState('')
   const [mensagemSolicitacao, setMensagemSolicitacao] = useState('')
   const [solicitacaoEmProcessamento, setSolicitacaoEmProcessamento] = useState(null)
+
+  const [filtroStatus, setFiltroStatus] = useState('TODOS')
+  const [filtroDataInicial, setFiltroDataInicial] = useState('')
+  const [filtroDataFinal, setFiltroDataFinal] = useState('')
 
   const secaoAtual = secoes.find(
     (secao) => secao.id === secaoAtiva
@@ -171,6 +196,10 @@ function Morador() {
 
     if (secaoAtiva === 'solicitacoes') {
       setMensagemSolicitacao('')
+      carregarSolicitacoes()
+    }
+
+    if (secaoAtiva === 'historico') {
       carregarSolicitacoes()
     }
   }, [
@@ -255,7 +284,7 @@ function Morador() {
         carregando: carregandoSolicitacoes,
         descricao: 'Acessos autorizados',
         icone: '✓',
-        secao: 'solicitacoes'
+        secao: 'historico'
       },
       {
         titulo: 'Solicitações expiradas',
@@ -265,7 +294,7 @@ function Morador() {
         carregando: carregandoSolicitacoes,
         descricao: 'Solicitações com prazo encerrado',
         icone: '◷',
-        secao: 'solicitacoes'
+        secao: 'historico'
       }
     ]
 
@@ -443,7 +472,7 @@ function Morador() {
     )
   }
 
-  function renderizarCartaoSolicitacao(solicitacao) {
+  function renderizarCartaoSolicitacao(solicitacao, modoHistorico = false) {
     const status =
       statusSolicitacao[solicitacao.status] || {
         nome: solicitacao.status || 'Não informado',
@@ -458,8 +487,15 @@ function Morador() {
 
     const dataExpiracao =
       solicitacao.status === 'AUTORIZADA'
-        ? calcularExpiracao(solicitacao.data_hora_resposta)
+        ? (
+            solicitacao.codigo_expira_em
+              ? new Date(solicitacao.codigo_expira_em)
+              : calcularExpiracao(solicitacao.data_hora_resposta)
+          )
         : null
+
+    const expiracaoValida =
+      dataExpiracao && !Number.isNaN(dataExpiracao.getTime())
 
     const tipoPessoaClasse =
       solicitacao.tipo_pessoa === 'PRESTADOR'
@@ -490,7 +526,11 @@ function Morador() {
         <div className="morador-autorizacao-detalhes">
           <div>
             <span>CPF</span>
-            <strong>{solicitacao.cpf}</strong>
+            <strong>
+              {modoHistorico
+                ? mascararCpf(solicitacao.cpf)
+                : solicitacao.cpf || 'Não informado'}
+            </strong>
           </div>
 
           <div>
@@ -519,7 +559,7 @@ function Morador() {
             </div>
           )}
 
-          {solicitacao.status === 'AUTORIZADA' && dataExpiracao && (
+          {solicitacao.status === 'AUTORIZADA' && expiracaoValida && (
             <div>
               <span>Autorização válida até</span>
               <strong>{dataExpiracao.toLocaleString('pt-BR')}</strong>
@@ -540,7 +580,7 @@ function Morador() {
           </div>
         )}
 
-        {solicitacao.status === 'PENDENTE' && (
+        {!modoHistorico && solicitacao.status === 'PENDENTE' && (
           <div className="morador-solicitacao-acoes">
             <button
               type="button"
@@ -576,7 +616,9 @@ function Morador() {
         </div>
 
         <div className="morador-autorizacoes-lista">
-          {itens.map(renderizarCartaoSolicitacao)}
+          {itens.map((solicitacao) =>
+            renderizarCartaoSolicitacao(solicitacao)
+          )}
         </div>
       </section>
     )
@@ -605,33 +647,20 @@ function Morador() {
       )
     }
 
-    const pendentes = solicitacoes.filter(
-      (item) => item.status === 'PENDENTE'
-    )
-
-    const autorizadas = solicitacoes.filter(
-      (item) => item.status === 'AUTORIZADA'
-    )
-
-    const expiradas = solicitacoes.filter(
-      (item) => item.status === 'EXPIRADA'
-    )
-
-    const recusadas = solicitacoes.filter(
-      (item) => item.status === 'NEGADA'
-    )
-
-    const canceladas = solicitacoes.filter(
-      (item) => item.status === 'CANCELADA'
-    )
+    const pendentes = solicitacoes
+      .filter((item) => item.status === 'PENDENTE')
+      .sort((a, b) =>
+        new Date(b.data_hora_solicitacao) -
+        new Date(a.data_hora_solicitacao)
+      )
 
     return (
       <>
         {mensagemSolicitacao && (
-          <div className="morador-feedback morador-feedback-sucesso">
-            <p>{mensagemSolicitacao}</p>
-          </div>
-        )}
+  <div className="morador-feedback morador-feedback-sucesso">
+    <p>{mensagemSolicitacao}</p>
+  </div>
+)}
 
         {erroSolicitacoes && (
           <div className="morador-feedback morador-feedback-erro">
@@ -641,10 +670,10 @@ function Morador() {
 
         <div className="morador-autorizacoes-toolbar">
           <p>
-            {solicitacoes.length}{' '}
-            {solicitacoes.length === 1
-              ? 'solicitação encontrada'
-              : 'solicitações encontradas'}
+            {pendentes.length}{' '}
+            {pendentes.length === 1
+              ? 'solicitação pendente'
+              : 'solicitações pendentes'}
           </p>
 
           <button
@@ -659,30 +688,180 @@ function Morador() {
           </button>
         </div>
 
-        {solicitacoes.length === 0 ? (
+        {pendentes.length === 0 ? (
           <div className="morador-feedback">
-            <div className="morador-empty-icon">♙</div>
-            <h3>Nenhuma solicitação encontrada</h3>
+            <div className="morador-empty-icon">✓</div>
+            <h3>Nenhuma solicitação pendente</h3>
             <p>
-              Quando alguém solicitar acesso ao seu apartamento,
-              o pedido aparecerá nesta área.
+              Você não possui solicitações aguardando aprovação.
+              As solicitações respondidas podem ser consultadas no Histórico.
             </p>
 
             <button
               type="button"
-              onClick={carregarSolicitacoes}
-              disabled={carregandoSolicitacoes}
+              onClick={() => navegarPara('historico')}
             >
-              Atualizar lista
+              Consultar histórico
             </button>
           </div>
         ) : (
           <div className="morador-solicitacoes-grupos">
-            {renderizarGrupoSolicitacoes('Aguardando sua aprovação', pendentes)}
-            {renderizarGrupoSolicitacoes('Autorizações válidas', autorizadas)}
-            {renderizarGrupoSolicitacoes('Solicitações expiradas', expiradas)}
-            {renderizarGrupoSolicitacoes('Solicitações recusadas', recusadas)}
-            {renderizarGrupoSolicitacoes('Solicitações canceladas', canceladas)}
+            {renderizarGrupoSolicitacoes(
+              'Aguardando sua aprovação',
+              pendentes
+            )}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  function renderizarHistorico() {
+    if (carregandoSolicitacoes) {
+      return (
+        <div className="morador-feedback">
+          <div className="morador-loading" />
+          <p>Carregando histórico de solicitações...</p>
+        </div>
+      )
+    }
+
+    if (erroSolicitacoes && solicitacoes.length === 0) {
+      return (
+        <div className="morador-feedback morador-feedback-erro">
+          <h3>Não foi possível carregar o histórico.</h3>
+          <p>{erroSolicitacoes}</p>
+
+          <button type="button" onClick={carregarSolicitacoes}>
+            Tentar novamente
+          </button>
+        </div>
+      )
+    }
+
+    const historicoFiltrado = solicitacoes
+      .filter((solicitacao) => {
+        if (
+          filtroStatus !== 'TODOS' &&
+          solicitacao.status !== filtroStatus
+        ) {
+          return false
+        }
+
+        const dataSolicitacao = obterDataISO(
+          solicitacao.data_hora_solicitacao
+        )
+
+        if (
+          filtroDataInicial &&
+          (!dataSolicitacao || dataSolicitacao < filtroDataInicial)
+        ) {
+          return false
+        }
+
+        if (
+          filtroDataFinal &&
+          (!dataSolicitacao || dataSolicitacao > filtroDataFinal)
+        ) {
+          return false
+        }
+
+        return true
+      })
+      .sort((a, b) =>
+        new Date(b.data_hora_solicitacao) -
+        new Date(a.data_hora_solicitacao)
+      )
+
+    return (
+      <>
+        {erroSolicitacoes && (
+          <div className="morador-feedback morador-feedback-erro">
+            <p>{erroSolicitacoes}</p>
+          </div>
+        )}
+
+        <div className="morador-autorizacoes-toolbar">
+          <p>
+            {historicoFiltrado.length}{' '}
+            {historicoFiltrado.length === 1
+              ? 'registro encontrado'
+              : 'registros encontrados'}
+          </p>
+
+          <button
+            type="button"
+            onClick={carregarSolicitacoes}
+            disabled={carregandoSolicitacoes}
+          >
+            ↻ Atualizar
+          </button>
+        </div>
+
+        <div className="morador-historico-filtros">
+          <div className="morador-historico-filtro">
+            <label htmlFor="historico-status">Situação</label>
+            <select
+              id="historico-status"
+              value={filtroStatus}
+              onChange={(event) => setFiltroStatus(event.target.value)}
+            >
+              <option value="TODOS">Todas as situações</option>
+              <option value="PENDENTE">Pendente</option>
+              <option value="AUTORIZADA">Autorizada</option>
+              <option value="NEGADA">Recusada</option>
+              <option value="EXPIRADA">Expirada</option>
+              <option value="CANCELADA">Cancelada</option>
+            </select>
+          </div>
+
+          <div className="morador-historico-filtro">
+            <label htmlFor="historico-data-inicial">Data inicial</label>
+            <input
+              id="historico-data-inicial"
+              type="date"
+              value={filtroDataInicial}
+              max={filtroDataFinal || undefined}
+              onChange={(event) => setFiltroDataInicial(event.target.value)}
+            />
+          </div>
+
+          <div className="morador-historico-filtro">
+            <label htmlFor="historico-data-final">Data final</label>
+            <input
+              id="historico-data-final"
+              type="date"
+              value={filtroDataFinal}
+              min={filtroDataInicial || undefined}
+              onChange={(event) => setFiltroDataFinal(event.target.value)}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFiltroStatus('TODOS')
+              setFiltroDataInicial('')
+              setFiltroDataFinal('')
+            }}
+          >
+            Limpar filtros
+          </button>
+        </div>
+
+        {historicoFiltrado.length === 0 ? (
+          <div className="morador-feedback">
+            <div className="morador-empty-icon">◷</div>
+            <h3>Nenhum registro encontrado</h3>
+            <p>
+              Não existem solicitações correspondentes aos filtros selecionados.
+            </p>
+          </div>
+        ) : (
+          <div className="morador-autorizacoes-lista">
+            {historicoFiltrado.map((solicitacao) =>
+              renderizarCartaoSolicitacao(solicitacao, true)
+            )}
           </div>
         )}
       </>
@@ -837,12 +1016,24 @@ function Morador() {
               <div className="morador-section-heading">
                 <h3>Solicitações de acesso</h3>
                 <p>
-                  Analise solicitações de visitantes e prestadores
-                  e acompanhe as autorizações.
+                  Analise as solicitações pendentes de visitantes
+                  e prestadores que aguardam sua aprovação.
                 </p>
               </div>
 
               {renderizarSolicitacoes()}
+            </section>
+          ) : secaoAtiva === 'historico' ? (
+            <section className="morador-autorizacoes">
+              <div className="morador-section-heading">
+                <h3>Histórico de solicitações</h3>
+                <p>
+                  Consulte todas as solicitações recebidas,
+                  incluindo as pendentes e as já respondidas.
+                </p>
+              </div>
+
+              {renderizarHistorico()}
             </section>
           ) : (
             <div className="morador-empty-state">

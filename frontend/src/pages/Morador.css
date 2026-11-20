@@ -36,8 +36,6 @@
   border-right: 1px solid var(--pc-border);
 }
 
-/* Identidade visual da marca PalmCondo */
-
 .morador-brand {
   display: inline-flex;
   align-items: center;
@@ -136,8 +134,6 @@
   flex-direction: column;
 }
 
-/* Cabeçalho */
-
 .morador-topbar {
   min-height: 88px;
   display: flex;
@@ -161,8 +157,6 @@
   font-weight: 800;
   letter-spacing: -0.4px;
 }
-
-/* Identificação e saída do morador */
 
 .morador-topbar-user {
   display: flex;
@@ -193,8 +187,6 @@
   font-size: 14px;
   font-weight: 850;
 }
-
-/* Botão sair */
 
 .morador-topbar-logout {
   min-height: 38px;
@@ -816,6 +808,102 @@
 }
 
 /* =========================================
+   HISTÓRICO - FILTROS
+========================================= */
+
+.morador-historico-filtros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 16px;
+  margin: 22px 0 24px;
+  padding: 22px;
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
+}
+
+.morador-historico-filtro {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.morador-historico-filtro label {
+  color: #555;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.morador-historico-filtro select,
+.morador-historico-filtro input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  color: var(--pc-text);
+  background-color: #fff;
+  border: 1px solid #deded8;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.morador-historico-filtro select {
+  cursor: pointer;
+}
+
+.morador-historico-filtro input {
+  color-scheme: light;
+}
+
+.morador-historico-filtro select:hover,
+.morador-historico-filtro input:hover {
+  border-color: #c5b36a;
+}
+
+.morador-historico-filtro select:focus,
+.morador-historico-filtro input:focus {
+  border-color: #d6ae00;
+  box-shadow: 0 0 0 3px rgba(255, 208, 0, 0.16);
+}
+
+.morador-historico-filtros > button {
+  min-height: 44px;
+  padding: 0 17px;
+  color: #555;
+  background: #f7f7f5;
+  border: 1px solid #e5e5df;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.morador-historico-filtros > button:hover {
+  color: var(--pc-black);
+  background: var(--pc-yellow-light);
+  border-color: #e6c000;
+}
+
+.morador-historico-filtros > button:focus-visible {
+  outline: 3px solid rgba(255, 208, 0, 0.25);
+  outline-offset: 2px;
+}
+
+/* =========================================
    RODAPÉ
 ========================================= */
 
@@ -855,6 +943,14 @@
 
   .morador-cards {
     gap: 13px;
+  }
+
+  .morador-historico-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .morador-historico-filtros > button {
+    width: 100%;
   }
 }
 
@@ -1017,6 +1113,22 @@
 
   .morador-solicitacoes-grupos {
     gap: 23px;
+  }
+
+  .morador-historico-filtros {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 18px;
+    padding: 17px;
+  }
+
+  .morador-historico-filtro select,
+  .morador-historico-filtro input {
+    height: 46px;
+  }
+
+  .morador-historico-filtros > button {
+    min-height: 44px;
   }
 
   .morador-footer {
