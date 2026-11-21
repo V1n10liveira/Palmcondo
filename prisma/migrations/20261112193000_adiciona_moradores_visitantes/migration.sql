@@ -1,4 +1,4 @@
-﻿CREATE TABLE `moradores_visitantes` (
+CREATE TABLE `moradores_visitantes` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `morador_id` BIGINT UNSIGNED NOT NULL,
     `pessoa_id` BIGINT UNSIGNED NOT NULL,
