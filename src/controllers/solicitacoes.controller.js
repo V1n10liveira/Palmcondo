@@ -855,6 +855,10 @@ async function responderSolicitacaoMorador(req, res) {
             },
             select: {
                 id: true,
+                nome: true,
+                cpf: true,
+                tipo_pessoa: true,
+                mensagem: true,
                 status: true
             }
         });
@@ -876,10 +880,19 @@ async function responderSolicitacaoMorador(req, res) {
         let codigoLiberacao = null;
         let atualizacao = null;
 
-        // Na aprovação, gera código e tenta gravá-lo.
-        // Se houver colisão no índice único, gera outro código.
         if (status === 'AUTORIZADA') {
             const codigoExpiraEm = calcularExpiracao(dataHoraResposta);
+
+            const formatarHora = (data) => {
+                return new Intl.DateTimeFormat('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hourCycle: 'h23'
+                }).format(data);
+            };
+
+            const mensagem = solicitacaoExistente.mensagem?.trim() || null;
 
             for (let tentativa = 0; tentativa < 5; tentativa++) {
                 const codigo = gerarCodigoLiberacao();
@@ -887,21 +900,119 @@ async function responderSolicitacaoMorador(req, res) {
                 const codigoCriptografado = criptografarCodigo(codigo);
 
                 try {
-                    atualizacao = await prisma.solicitacoes_acesso.updateMany({
-                        where: {
-                            id: solicitacaoId,
-                            condominio_id: condominioId,
-                            apartamento_destino_id: morador.apartamento_id,
-                            status: 'PENDENTE'
-                        },
-                        data: {
-                            status,
-                            respondido_por: usuarioId,
-                            data_hora_resposta: dataHoraResposta,
-                            codigo_liberacao_hash: codigoHash,
-                            codigo_liberacao_criptografado: codigoCriptografado,
-                            codigo_expira_em: codigoExpiraEm
+                    atualizacao = await prisma.$transaction(async (tx) => {
+                        const resultadoAtualizacao =
+                            await tx.solicitacoes_acesso.updateMany({
+                                where: {
+                                    id: solicitacaoId,
+                                    condominio_id: condominioId,
+                                    apartamento_destino_id: morador.apartamento_id,
+                                    status: 'PENDENTE'
+                                },
+                                data: {
+                                    status: 'AUTORIZADA',
+                                    respondido_por: usuarioId,
+                                    data_hora_resposta: dataHoraResposta,
+                                    codigo_liberacao_hash: codigoHash,
+                                    codigo_liberacao_criptografado: codigoCriptografado,
+                                    codigo_expira_em: codigoExpiraEm
+                                }
+                            });
+
+                        if (resultadoAtualizacao.count === 0) {
+                            return {
+                                count: 0
+                            };
                         }
+
+                        // Localiza o cadastro único da pessoa no condomínio.
+                        const pessoaExistente = await tx.pessoas.findUnique({
+                            where: {
+                                condominio_id_cpf: {
+                                    condominio_id: condominioId,
+                                    cpf: solicitacaoExistente.cpf
+                                }
+                            }
+                        });
+
+                        let pessoa;
+
+                        if (pessoaExistente) {
+                            if (!pessoaExistente.ativo) {
+                                throw new Error('PESSOA_INATIVA');
+                            }
+
+                            if (
+                                pessoaExistente.tipo_pessoa !==
+                                solicitacaoExistente.tipo_pessoa
+                            ) {
+                                throw new Error('TIPO_PESSOA_DIFERENTE');
+                            }
+
+                            // Reutiliza o cadastro sem alterar seus dados.
+                            pessoa = pessoaExistente;
+                        } else {
+                            pessoa = await tx.pessoas.create({
+                                data: {
+                                    condominio_id: condominioId,
+                                    nome: solicitacaoExistente.nome,
+                                    cpf: solicitacaoExistente.cpf,
+                                    tipo_pessoa: solicitacaoExistente.tipo_pessoa,
+                                    observacao: mensagem,
+                                    ativo: true
+                                }
+                            });
+                        }
+
+                        // Para prestadores, reutiliza o cadastro complementar.
+                        if (solicitacaoExistente.tipo_pessoa === 'PRESTADOR') {
+                            const prestadorExistente =
+                                await tx.prestadores.findUnique({
+                                    where: {
+                                        pessoa_id: pessoa.id
+                                    }
+                                });
+
+                            if (prestadorExistente) {
+                                if (!prestadorExistente.ativo) {
+                                    throw new Error('PRESTADOR_INATIVO');
+                                }
+
+                                // Não altera o cadastro ou vínculo original.
+                            } else {
+                                await tx.prestadores.create({
+                                    data: {
+                                        pessoa_id: pessoa.id,
+                                        morador_id: morador.id,
+                                        servico: mensagem || 'Serviço não informado',
+                                        ativo: true
+                                    }
+                                });
+                            }
+                        }
+
+                        // Cria uma autorização independente para esta aprovação.
+                        await tx.autorizacoes.create({
+                            data: {
+                                condominio_id: condominioId,
+                                morador_id: morador.id,
+                                pessoa_id: pessoa.id,
+                                data_inicio: dataHoraResposta,
+                                data_fim: codigoExpiraEm,
+                                hora_inicio: formatarHora(dataHoraResposta),
+                                hora_fim: formatarHora(codigoExpiraEm),
+                                motivo: mensagem || (
+                                    solicitacaoExistente.tipo_pessoa === 'PRESTADOR'
+                                        ? 'Solicitação pública de prestador'
+                                        : 'Solicitação pública de visitante'
+                                ),
+                                observacao: `Autorização gerada pela solicitação pública #${solicitacaoId}.`,
+                                status: 'ATIVA',
+                                criado_por: usuarioId
+                            }
+                        });
+
+                        return resultadoAtualizacao;
                     });
 
                     if (atualizacao.count > 0) {
@@ -911,10 +1022,13 @@ async function responderSolicitacaoMorador(req, res) {
                     break;
 
                 } catch (error) {
-                    if (
+                    const alvoErro = JSON.stringify(error.meta?.target || '');
+
+                    const colisaoCodigo =
                         error.code === 'P2002' &&
-                        tentativa < 4
-                    ) {
+                        alvoErro.includes('codigo_liberacao_hash');
+
+                    if (colisaoCodigo && tentativa < 4) {
                         continue;
                     }
 
@@ -931,7 +1045,7 @@ async function responderSolicitacaoMorador(req, res) {
                     status: 'PENDENTE'
                 },
                 data: {
-                    status,
+                    status: 'NEGADA',
                     respondido_por: usuarioId,
                     data_hora_resposta: dataHoraResposta
                 }
@@ -996,6 +1110,27 @@ async function responderSolicitacaoMorador(req, res) {
 
     } catch (error) {
         console.error('ERRO AO RESPONDER SOLICITAÇÃO:', error);
+
+        const erros = {
+            PESSOA_INATIVA: [
+                400,
+                'Já existe uma pessoa com este CPF, mas ela está inativa. Regularize o cadastro antes de aprovar.'
+            ],
+            TIPO_PESSOA_DIFERENTE: [
+                409,
+                'Este CPF já está cadastrado com outro tipo de pessoa. Verifique o cadastro antes de aprovar.'
+            ],
+            PRESTADOR_INATIVO: [
+                400,
+                'O cadastro de prestador vinculado a este CPF está inativo. Regularize o cadastro antes de aprovar.'
+            ]
+        };
+
+        if (erros[error.message]) {
+            return res.status(erros[error.message][0]).json({
+                erro: erros[error.message][1]
+            });
+        }
 
         return res.status(500).json({
             erro: 'Erro ao responder solicitação de acesso.'
